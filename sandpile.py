@@ -20,15 +20,21 @@ class Sandpile2():          ### Define the class Sandpile2
         
         # Since the vertices can be given any name, we want to standardize their numbering for ease of computation
         self.v_vertices = [i for i in range(self.v_len)]                                # Virtual vertices
-        self.v_names = {i:self.vertices[i] for i in self.v_vertices}                    # Names for virtual vertices
-        # Swap vertex associated to 0 and the sink, so the sink is associated to 0
-        temp_vertex = self.v_names[0]
-        temp_key = (list(self.v_names.keys())[list(self.v_names.values()).index(self.sink)])
-        self.v_names[temp_key] = temp_vertex
-        self.v_names[0] = self.sink
+        self.v_name = {i:self.vertices[i] for i in self.v_vertices}                     # Dictionary that returns the actual vertex of a given index (0 -> sink)
+        self.v_index = {self.vertices[i]:i for i in self.v_vertices}                    # Dictionary that returns the index of an actual vertex (sink -> 0)
+        # Swap vertex associated to 0 and the sink, so the sink is associated to 0...
+        temp_vertex = self.v_index[self.sink]       # ... for v_index
+        temp_key = (list(self.v_index.keys())[list(self.v_index.values()).index(0)])
+        self.v_index[temp_key] = temp_vertex
+        self.v_index[self.sink] = 0
+        temp_vertex = self.v_name[0]               # ... for v_name
+        temp_key = (list(self.v_name.keys())[list(self.v_name.values()).index(self.sink)])
+        self.v_name[temp_key] = temp_vertex
+        self.v_name[self.sink] = 0
         del temp_vertex, temp_key
         
         self.current_conf = [0 for i in range(self.v_len)]                                      # Sets the current configuration
+        self.directed_neigh = [self.v_index[j] for i in range(self.v_vertices) for j in range(self.graph.neighbors(self.v_name[j]))]             # Records the outward edges of each vertex, using the new naming scheme
         self.degree = [len((self.graph).neighbors(self.v_names[i])) for i in self.v_vertices]   # Computes the degree of each vertex
         
          
