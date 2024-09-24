@@ -30,23 +30,29 @@ class Sandpile2():          ### Define the class Sandpile2
         temp_vertex = self.v_name[0]               # ... for v_name
         temp_key = (list(self.v_name.keys())[list(self.v_name.values()).index(self.sink)])
         self.v_name[temp_key] = temp_vertex
-        self.v_name[self.sink] = 0
+        self.v_name[0] = self.sink
         del temp_vertex, temp_key
         
-        self.current_conf = [0 for i in range(self.v_len)]                                      # Sets the current configuration
-        self.directed_neigh = [self.v_index[j] for i in range(self.v_vertices) for j in range(self.graph.neighbors(self.v_name[j]))]             # Records the outward edges of each vertex, using the new naming scheme
-        self.degree = [len((self.graph).neighbors(self.v_names[i])) for i in self.v_vertices]   # Computes the degree of each vertex
+        # Recovers informations on graph, translating to new numbering scheme
+        self.current_conf = [0 for i in range(self.v_len)]                                                                # Sets the current configuration
+        self.directed_neigh = [[self.v_index[j] for j in self.graph.neighbors(self.v_name[i])] for i in self.v_vertices]  # Records the outward edges of each vertex, using the new naming scheme
+        self.degree = [len(self.directed_neigh[i]) for i in self.v_vertices]                                              # Computes the degree of each vertex
         
-         
     
     def __repr__(self):                     ## Returns a description of the class Sandpile2
         return "A sandpile structure. The graph has vertex set {} and sink {}".format(self.vertices, self.sink) 
         
-    
-    def show(self):                         ## Returns an image of the graph with labeling given by the configuration
+
+    def show(self, v_indexing=False):                         ## Returns an image of the graph with labeling given by the configuration
         r"""
-            Draws the usual representation of the graph.
+            Draws the usual representation of the graph. The sink is colored in blue and the others in red.
+            The possible options are:
+                v_indexing          If set "True" the vertex labels are the virtual ones, where "0" is the sink
         """
-        self.graph.show()
+        if v_indexing == False:
+            self.graph.show(vertex_color = 'lightcoral', vertex_colors = {'lightskyblue':[self.sink]})
+
+        else:
+            self.graph.show(vertex_labels = self.v_index, vertex_color = 'lightcoral', vertex_colors = {'lightskyblue':[self.sink]})
         
     
