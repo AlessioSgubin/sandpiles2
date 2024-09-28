@@ -91,10 +91,10 @@ class Sandpile2():          ### Define the class Sandpile2
         return True
 
 
-    def is_recurrent(self):
+    def is_recurrent(self, virtual=True):
         r"""
             Checks if the current configuration is recurrent.
-            The function returns the boolean value and a good toppling order.
+            The function returns the boolean value and a good toppling order. If there is no good toppling order, return list "[sink]".
         """
         start_conf = self.current_conf                                                      # The configuration before computations
         
@@ -107,11 +107,17 @@ class Sandpile2():          ### Define the class Sandpile2
         while depth >= 0:                           # Continue the search depth-first until we checked everything
             if depth == self.v_len - 1:                     # All vertices have been toppled
                 self.current_conf = start_conf
-                return [True, (branchings[depth])[1]]               # Return True and the toppling order
+                if not virtual:                             # Return True and the toppling order
+                    return [True, [self.v_name[x] for x in branchings[depth][1]]]
+                else:
+                    return [True, branchings[depth][1]]               
             elif len(branchings[depth][3]) == 0:            # If there is no more candidate, go back
                 if depth == 0:                                      # Check if we have finished candidates
                     self.current_conf = start_conf
-                    return [False, 0]
+                    if not virtual:                         # Return False and the sink
+                        return [False, [self.sink]]
+                    else:
+                        return [False, [0]]
                 else:
                     depth -= 1                                      # Decrease the depth
                     branchings[depth][3].pop(0)                     # Remove the node from good candidates (it was the first one of the list)
@@ -127,11 +133,19 @@ class Sandpile2():          ### Define the class Sandpile2
                                                                         # List the good next candidates, unstable vertices jet to be toppled
                 if new_remaining == new_good_cand:                      # If all remaining are unstable, we are finished
                     self.current_conf = start_conf
-                    return [True, (branchings[depth])[1]]               # Return True and the toppling order
+                    new_toppl_ord.extend(new_remaining)
+                    if not virtual:                                             # Return True and the toppling order
+                        return [True, [self.v_name[x] for x in new_toppl_ord]]
+                    else:
+                        return [True, new_toppl_ord] 
                 new_branch = [self.current_conf, new_toppl_ord, new_remaining, new_good_cand]  
                 branchings.append(new_branch)                           # Append the new branching point
                 depth += 1
         self.current_conf = start_conf
-        return [False, [0]]
+        if not virtual:                                         # Return False and the sink
+            return [False, [self.sink]]
+        else:
+            return [False, [0]]
 
+    
     
