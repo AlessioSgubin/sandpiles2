@@ -1,6 +1,10 @@
+import copy                 # To deep-copy iterated lists
+import itertools            # To remove unhashable duplicates in lists
+import numpy as np          # To use arrays
+
 class Sandpile2():          ### Define the class Sandpile2
 
-    def __init__(self, G, sink, sparse=False):            ## Implicit definition of Sandpile2
+    def __init__(self, G, sink):            ## Implicit definition of Sandpile2
         r"""
             Creates an object SandPile2, the defining arguments are the graph (directed or undirected) and a sink.
         """
@@ -34,7 +38,7 @@ class Sandpile2():          ### Define the class Sandpile2
         del temp_vertex, temp_key
         
         # Recovers informations on graph, translating to new numbering scheme
-        self.current_conf = [0 for i in range(self.v_len)]                                                                # Sets the current configuration
+        self.current_conf = [0 for i in range(self.v_len)]                                                               # Sets the current configuration
         self.directed_neigh = [[self.v_index[j] for j in self.graph.neighbors(self.v_name[i])] for i in self.v_vertices]  # Records the outward edges of each vertex, using the new naming scheme
         self.out_degree = [len(self.directed_neigh[i]) for i in self.v_vertices]                                              # Computes the degree of each vertex
         
@@ -99,7 +103,7 @@ class Sandpile2():          ### Define the class Sandpile2
         start_conf = self.current_conf                                                      # The configuration before computations
         
         self.topple_vertex(self.sink)                                                       # Topple the sink first
-        branchings = [ [self.current_conf, [0], [i+1 for i in range(self.v_len - 1)], [x for x in self.v_vertices if self.current_conf[x] >= self.out_degree[x] ]] ]   
+        branchings = [ [self.current_conf, [0], [i+1 for i in range(self.v_len - 1)], [x for x in self.v_vertices if (self.current_conf[x] >= self.out_degree[x] and x != 0) ] ] ]   
                                                                                             # List of the branching points for the depth-first search of recurrent orders.
                                                                                             # It stores lists containing "[configuration, toppling order, remaining to be toppled, good candidates]"
         depth = 0                                                                           # Stores the depth of the current search
@@ -147,5 +151,132 @@ class Sandpile2():          ### Define the class Sandpile2
         else:
             return [False, [0]]
 
+
+    def minimal_conf(self, configs):
+        r"""
+            This function takes a list of configurations and returns the subset of minimal ones with respect to the componentwise integer order.
+        """
+        ### Delete bad configs
+        print(len(configs))
+        count = 0
+        for i in configs:
+            print(count)
+            j = 0
+            check = False
+            while j <= self.v_len and check == False:
+                if i[j] >= self.out_degree[j]:
+                    configs.pop(count)
+                    check = True
+                    print("YEP.")
+                    count -= 1
+                j += 1
+            count += 1
+
+
+        ### Delete duplicates
+        print(len(configs))
+        configs.sort()
+        list(configs for configs,_ in itertools.groupby(configs))
+        print(len(configs))
+
+        ### Delete non-minimal
+        count = 0
+        iterat = 0
+        index = 0
+        for x in configs:
+            iterat += 1
+            print("Iterazione {} e rimossi {}".format(iterat, count))
+            for y in configs[index+1:]:
+                removable = True
+                i = 0
+                while (removable == True) and (i < len(x)):
+                    if x[i] > y[i]:
+                        removable = False
+                    else:
+                        i += 1
+                if removable:
+                    configs.remove(y)
+                    count += 1
+            index +=1
+        count                               # Display the redundants
+        return configs
+
+
+    def recurrent_conf(self, minimal=False):
+        r"""
+            Function that computes all recurrent configurations. The possible options are:
+                - minimal       : if True it runs a O(n!) algorithm to find just the minimal recurrent configurations
+        """
+        print("Starting the search for recurrent configurations...")
+        start_conf = self.current_conf
+        self.current_conf = [0 for i in self.vertices]                                      # The configuration before computations
+        recurrent_list = []                                                                 # Initialize list for recurrents
+
+        self.topple_vertex(self.sink)                                                       # Topple the sink first
+        branchings = [ [self.current_conf, [0], [i+1 for i in range(self.v_len - 1)], [x for x in self.v_vertices if self.current_conf[x]>0], [0 for i in self.vertices]] ]
+                                                                                            # List of the branching points for the depth-first search of recurrent orders.
+                                                                                            # It stores lists containing "[how many grains added, toppling order, remaining to be toppled, good candidates, configuration being built]"
+        depth = 0                                                                           # Stores the depth of the current search
+        try:
+            while depth >= 0:                           # Continue the search depth-first until we checked everything
+                print("Depth {}".format(depth)) #, branching {} con dati {}".format(depth, len(branchings), branchings[depth]))
+                if len(branchings[depth][3]) == 0:          # There is no more good candidate...
+                    if depth == self.v_len - 1:                     # ...because we have a good configuration! (USELESS CASE, I THINK)
+                        ###print("Good configuration")
+                        recurrent_list.append(branchings[depth][4])             # Append the new configuration found
+                        depth -= 1                                              # Decrease the depth
+                        branchings[depth][3].pop(0)                             # Remove the node from good candidates (it was the first one of the list)
+                        branchings[depth][4]
+                        branchings.pop()                                        # Remove last element from branchings
+                        self.current_conf = copy.copy(branchings[depth][0])     # Restore the configuration of grains added
+                    elif depth == 0:                                # ...because we have finished the entire search!
+                        ###print("Finished all!")
+                        self.current_conf = start_conf                          # Reset the configuration
+                        recurrent_list = self.minimal_conf(recurrent_list)      # Remove non-minimal recurrent configurations found
+                        return [len(recurrent_list), recurrent_list]            # Return number of configurations and list
+                    else:                                           # ...because we are on a dead branch!
+                        ###print("Dead branch")
+                        depth -= 1                                              # Decrease the depth
+                        branchings[depth][3].pop(0)                             # Remove the node from good candidates (it was the first one of the list)
+                        branchings.pop()                                        # Remove last element from branchings
+                        self.current_conf = copy.copy(branchings[depth][0])     # Restore the configuration of grains added
+                else:                                       # There is a new candidate, grow the branching tree
+                    new_cand = branchings[depth][3][0]                          # Topple the first candidate of the list
+                    ###print("New candidate {}".format(new_cand))
+                    self.topple_vertex(new_cand)          
+                    new_grainsadd = copy.copy(self.current_conf)
+                    new_toppl_ord = copy.copy(branchings[depth][1])             # Add the new candidate to the possible toppling order
+                    new_toppl_ord.append(new_cand)                          
+                    new_remaining = copy.copy(branchings[depth][2])             # Removing new candidate from remaining vertices
+                    new_remaining.remove(new_cand)                          
+                    new_builtconf = copy.copy(branchings[depth][4])             # Adding to the configuration being built the minimal value for the new candidate to be toppled
+                    new_builtconf[new_cand] = self.out_degree[new_cand] - self.current_conf[new_cand]
+                    new_good_cand = [x for x in new_remaining if self.current_conf[x] > 0]
+                                                                                # List the good next candidates, unstable vertices jet to be toppled
+                    
+                    new_branch = [new_grainsadd, new_toppl_ord, new_remaining, new_good_cand, new_builtconf]  
+                    branchings.append(new_branch)                               # Append the new branching point
+                    depth += 1
+        except:
+            for i in branchings:
+                print(i)
+        
+        self.current_conf = start_conf
+        print("...search has concluded! Now reduce the configurations to minimal ones...")
+        recurrent_list = self.minimal_conf(recurrent_list)  # Remove non-minimal recurrent configurations found
+        print("...return the results, we found {} minimal configurations".format(len(recurrent_list)))
+        return [ len(recurrent_list), recurrent_list]       # Return the number and list of recurrent configurations
+        
     
-    
+    def over_configs(self, min_conf):
+        r"""
+            This function returns a list of configurations starting from minimal set.
+        """
+        all_conf = []
+        for v in min_conf:
+            if v not in all_conf:
+                branchings = [ [v, 0] ]          # Start a recurrent addition of configurations
+                depth = 0
+                while depth >= 0:
+                    return False
+                    ########## TO BE FINISHED!
