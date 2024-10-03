@@ -1,10 +1,16 @@
-import copy
+import itertools
+
+                    #####################################################
+                    #           Sorted Sandpile Configuration           #
+                    #####################################################
 
 class SandpileSortConfig():
 
     def __init__(self, sandp, config, permut):      ## Defines the class SandpileSortConfig
         r"""
-            Definition of the class SandpileSortConfig. The arguments given are a sandpile and a partition of the vertex set (without sink).
+            Definition of the class SandpileSortConfig.
+            
+            The arguments given are a sandpile and a partition of the vertex set (without sink).
         """
 
         ### TODO: check if the arguments given correspond to a good SandpileSortConfig
@@ -15,8 +21,25 @@ class SandpileSortConfig():
 
 
     def __repr__(self):                             ## Returns a description of the class Sandpile2
-        return "A sorted configuration for a sandpile with {} vertices and sink {}".format(self.sandpile_struct.vertices(), self.sandpile_struct.sink())
-     
+        return "A sorted configuration for a sandpile with vertices {} and sink {}".format(self.sandpile_struct.vertices(), self.sandpile_struct.sink())
+    
+
+    def sort(self, change = True):
+        r"""
+            Rearrange the configuration values by increasing order on each orbit.
+
+            If change is True, it modifies the configuration, if it is False, it just returns the sorted one.
+        """
+        result = self.sandpile_config
+        for part in self.perm_group:
+            part_conf = [result[i] for i in part]     # Get the partial configuration associated with an orbit
+            part_conf.sort()                          # Sort it
+            for j in range(len(part)):                # Modify the configuration
+                result[part[j]] = part_conf[j]
+        if change:                                    # Changing the actual configuration
+            self.sandpile_config = result
+        return result
+    
 
     def __eq__(self, other):                        ## Compares two sorted configurations to see if they are equivalent under the permutation group
         r"""
@@ -24,32 +47,11 @@ class SandpileSortConfig():
         """
         if (self.sandpile_struct != other.sandpile_struct) or (self.perm_group != other.perm_group):    # Not comparable
             raise Exception("The two sorted configurations are not comparable.")
-        else:                                                                                           # Compare all classes
-            i = 0
-            for i in range(len(self.perm_group)):                                       # Iterate on each orbit of the permutation group...
-                self_part = [self.sandpile_config[j] for j in self.perm_group[i]]
-                other_part = [other.sandpile_config[j] for j in other.perm_group[i]]
-                set_self = set(self_part)
-                if set_self == set( other_part ):                                       # Check if the support of the partial configuration is the same
-                    self_mul_set = []
-                    other_mul_set = []
-                    for i in set_self:                                                      # positive case: check if the multeplicity is right
-                        num = 0
-                        for j in range(len(self_part)):
-                            if self_part[j] == i:
-                                self_mul_set.append((i,num))
-                                num += 1
-                        num = 0
-                        for j in range(len(other_part)):
-                            if other_part[j] == i:
-                                other_mul_set.append((i,num))
-                                num += 1
-                    if set( self_mul_set ) != set( other_mul_set ):
-                        return False
-                else:                                                                       # negative case: return false
-                    return False
+        elif self.sort(change = False) == other.sort(change = False):                                   # Compare sorted configurations
             return True
-        
+        else:
+            return False
+            
     
     def is_recurrent(self):                         ## Check if the configuration is recurrent
         r"""
@@ -136,3 +138,58 @@ class SandpileSortConfig():
                     not_toppled.remove(ind)                         # Remove the vertex from not-toppled
             loop_count += 1
         return delay
+    
+
+
+
+                    #####################################################
+                    #                   Sorted Sandpile                 #
+                    #####################################################
+
+class SortedSandpile():
+
+    def __init__(self, graph, sink, permut):              ## Initialize the class SortedSandpile
+        r"""
+            Definition of the class SortedSandpile.
+            
+            The arguments given are a sandpile and a partition of the vertex set (without sink).
+        """
+
+        ### TODO: check if the arguments given correspond to a good SandpileSortConfig
+        
+        self.sandpile_struct = Sandpile(graph, sink) # type: ignore
+        self.perm_group = permut
+
+    def __repr__(self):                             ## Description of SortedSandpile class
+        return "A sorted sandpile on vertices {} and sink {}.".format(self.sandpile_struct.vertices(), self.sandpile_struct.sink())
+    
+
+    def simple_recurrents(self):                    ## Computes the simple recurrents
+        r"""
+            Returns the list of recurrent configurations ignoring the action of perm_group.
+
+            It's a call of the recurrents() function from Sandpile class.
+        """
+        return self.sandpile_struct.recurrents()
+    
+
+    def sorted_recurrents(self, option = 0):
+        r"""
+            Computes the sorted recurrent configurations.
+
+            - option        : based on the value the search algorithm changes
+                = 0     : calls the recurrent() function from Sandpile class [default]
+                = 1     : HOPEFULLY ONE DAY...
+        """
+        match option:
+            
+            case 0:                                                         ## OPTION 0
+                simpl_rec = self.simple_recurrents()        # Compute all the recurrent configurations
+                for i in range(len(simpl_rec)):             # Reorder elements in each configuration
+                    temp = SandpileSortConfig(self.sandpile_struct, simpl_rec[i], self.perm_group)
+                    simpl_rec[i] = temp.sort()
+                simpl_rec.sort()                            # Remove duplicates
+                return list(simpl_rec for simpl_rec,_ in itertools.groupby(simpl_rec))
+            
+            case _:
+                raise Exception("The given option is not valid.")

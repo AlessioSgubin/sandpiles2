@@ -1,6 +1,6 @@
 ### Testing the new class SandpileSortCofig
 
-test_number = 1
+test_number = 2
 
 if test_number == 0:
 
@@ -28,3 +28,13 @@ elif test_number == 1:
     print(C1.level())
     print(C1.is_recurrent())
     print(C1.delay())
+
+    print(C2.sort())
+
+elif test_number == 2:
+
+    G = graphs.CompleteGraph(7)
+    S = SortedSandpile(G, 0, [[1,2,3,4]])
+
+    lis = S.sorted_recurrents()
+    print("In tutto sono {} elementi".format(len(lis)))
