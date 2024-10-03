@@ -193,3 +193,10 @@ class SortedSandpile():
             
             case _:
                 raise Exception("The given option is not valid.")
+            
+    
+    def qt_Polynomial(self):
+        r"""
+            Returns the q,t - polynomial corresponding to the sorted sandpile's recurrent configurations.
+        """
+        ### Still to be written...
