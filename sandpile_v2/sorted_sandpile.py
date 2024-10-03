@@ -1,4 +1,5 @@
 import itertools
+import numpy as np
 
                     #####################################################
                     #           Sorted Sandpile Configuration           #
@@ -6,7 +7,7 @@ import itertools
 
 class SandpileSortConfig():
 
-    def __init__(self, sandp, config, permut):      ## Defines the class SandpileSortConfig
+    def __init__(self, sandp, config, permut, opt=[]):      ## Defines the class SandpileSortConfig
         r"""
             Definition of the class SandpileSortConfig.
             
@@ -15,9 +16,10 @@ class SandpileSortConfig():
 
         ### TODO: check if the arguments given correspond to a good SandpileSortConfig
 
-        self.sandpile_struct = sandp                                            # Define the sandpile_struct as sandp
-        self.sandpile_config = SandpileConfig(self.sandpile_struct, config)     # type: ignore # Define the configuration for 
-        self.perm_group = permut                                                # Define the permutation group on the sandpile
+        self.sandpile_struct = sandp                                                        # Define the sandpile_struct as sandp
+        self.sandpile_config = SandpileConfig(self.sandpile_struct, config) # type: ignore  # Define the configuration for 
+        self.perm_group = permut                                                            # Define the permutation group on the sandpile
+        self.specific_opt = opt                                                             # Define the specific options, to optimize in specific cases
 
 
     def __repr__(self):                             ## Returns a description of the class Sandpile2
@@ -123,7 +125,6 @@ class SandpileSortConfig():
             order = nonsink_vert
             order.sort()
             order.reverse()
-            print(order)
         
         delay = 0                                                   # The delay value
         loop_count = 0                                              # The loop count
@@ -173,7 +174,7 @@ class SortedSandpile():
         return self.sandpile_struct.recurrents()
     
 
-    def sorted_recurrents(self, option = 0):
+    def sorted_recurrents(self, option = 0):        ## Computes a list of all sorted recurrent configurations
         r"""
             Computes the sorted recurrent configurations.
 
@@ -195,8 +196,52 @@ class SortedSandpile():
                 raise Exception("The given option is not valid.")
             
     
-    def qt_Polynomial(self):
+    def qt_Polynomial(self, order = []):            ## Computes the q,t polynomial on (level, delay)
         r"""
             Returns the q,t - polynomial corresponding to the sorted sandpile's recurrent configurations.
+
+            - order     : if specified, it fixes the reading order for the delay statistic.
         """
-        ### Still to be written...
+        R = PolynomialRing(QQ, 'q, t')      # type: ignore
+        q,t = R.gens()
+        poly = 0*q*t                        # Define the polynomial as 0
+        for config in self.sorted_recurrents():
+            sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group)
+            q_exp = sortedconfig.level()
+            t_exp = sortedconfig.delay(order = order)
+            poly = poly + (q**q_exp) * (t**t_exp)
+        return poly
+    
+
+def CliqueIndependent_SortedSandpile(mu, nu):   ## Specific type of Sandpile
+    r"""
+        Construction of a Sorted Sandpile on the clique-independent graph given by parameters mu and nu.
+    """
+    mu_num = sum(mu)                                    # Number of independent vertices
+    nu_num = sum(nu)                                    # Number of vertices in cliques
+    d = {0 : [i+1 for i in range(mu_num + nu_num)]}     # Initialize the dictionary that will define the graph, link the sink to each vertex
+    perm_group = []                                     # Initialize the permutation group acting on the graph
+
+    part_first = 1                                      # Keeps track of first vertex of current part
+    for part_nu in nu:                                                  # Add edges for independent vertices. For each part...
+        for i in range(part_nu):                                        # ...for each vertex in the part...
+            d[part_first + i] = [vert for vert in range(mu_num + nu_num + 1) if (vert < part_first) or (vert >= part_first + part_nu)]
+                                                                        # ...add all edges except for other vertices in part_nu    
+        perm_group.append([part_first+j for j in range(part_nu)])       # Add the permutation orbit for the nu_part
+        part_first += part_nu
+    for part_mu in mu:
+        for i in range(part_mu):
+            d[part_first + i] = [vert for vert in range(mu_num + nu_num + 1) if vert != part_first + i]
+        perm_group.append([part_first+j for j in range(part_mu)])       # Add the permutation orbit for the mu_part
+        part_first += part_mu
+    
+    G = Graph(d)            # type: ignore      # Define the clique-independent graph
+    
+    #positions = {0:(0,0)} | {i+1:(-np.sin(2*np.pi*i/(mu_num + nu_num)), np.cos(2*np.pi*i/(mu_num + nu_num)))  for i in range(mu_num + nu_num)}
+    #G.show(pos = positions)
+    S = SortedSandpile(G, 0, perm_group)
+
+    return S
+
+
+################    FINIRE OPZIONI SPECIFICHE! 

@@ -1,6 +1,6 @@
 ### Testing the new class SandpileSortCofig
 
-test_number = 2
+test_number = 3
 
 if test_number == 0:
 
@@ -33,8 +33,17 @@ elif test_number == 1:
 
 elif test_number == 2:
 
-    G = graphs.CompleteGraph(7)
+    G = graphs.CompleteGraph(6)
     S = SortedSandpile(G, 0, [[1,2,3,4]])
 
     lis = S.sorted_recurrents()
-    print("In tutto sono {} elementi".format(len(lis)))
+    #print("In tutto sono {} elementi".format(len(lis)))
+
+    poly = S.qt_Polynomial()
+    print("Il polinomio associato al Sorted Sandpile è {}".format(poly))
+
+elif test_number == 3:
+
+    S = CliqueIndependent_SortedSandpile([4,3],[3,2])
+    poly = S.qt_Polynomial()
+    print("Il polinomio associato al Sorted Sandpile è {}".format(poly))
