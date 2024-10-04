@@ -1,4 +1,5 @@
 import itertools
+import copy
 import numpy as np
 
                     #####################################################
@@ -7,7 +8,7 @@ import numpy as np
 
 class SandpileSortConfig():
 
-    def __init__(self, sandp, config, permut, opt=[]):      ## Defines the class SandpileSortConfig
+    def __init__(self, sandp, config, permut):      ## Defines the class SandpileSortConfig
         r"""
             Definition of the class SandpileSortConfig.
             
@@ -19,7 +20,6 @@ class SandpileSortConfig():
         self.sandpile_struct = sandp                                                        # Define the sandpile_struct as sandp
         self.sandpile_config = SandpileConfig(self.sandpile_struct, config) # type: ignore  # Define the configuration for 
         self.perm_group = permut                                                            # Define the permutation group on the sandpile
-        self.specific_opt = opt                                                             # Define the specific options, to optimize in specific cases
 
 
     def __repr__(self):                             ## Returns a description of the class Sandpile2
@@ -149,7 +149,7 @@ class SandpileSortConfig():
 
 class SortedSandpile():
 
-    def __init__(self, graph, sink, permut):              ## Initialize the class SortedSandpile
+    def __init__(self, graph, sink, permut, opt=[]):            ## Initialize the class SortedSandpile
         r"""
             Definition of the class SortedSandpile.
             
@@ -158,8 +158,9 @@ class SortedSandpile():
 
         ### TODO: check if the arguments given correspond to a good SandpileSortConfig
         
-        self.sandpile_struct = Sandpile(graph, sink) # type: ignore
-        self.perm_group = permut
+        self.sandpile_struct = Sandpile(graph, sink) # type: ignore                         # Define the Sandpile structure
+        self.perm_group = permut                                                            # 
+        self.specific_opt = opt                                                             # Define the specific options, to optimize in specific cases
 
     def __repr__(self):                             ## Description of SortedSandpile class
         return "A sorted sandpile on vertices {} and sink {}.".format(self.sandpile_struct.vertices(), self.sandpile_struct.sink())
@@ -212,6 +213,33 @@ class SortedSandpile():
             poly = poly + (q**q_exp) * (t**t_exp)
         return poly
     
+    
+    def show(self):                                 ## Function that displays the Sorted Sandpile
+        r"""
+            This function plots the sorted sandpile.
+
+            If specific_opt is non-empty, the show function uses specific parameters:
+            - default                   : call to the Sandpile.show() function
+            - clique-independent graph  : call to the Sandpile.show() function fixing the position of the vertices,
+                                          the sink in the center and the nonsink in a circle.
+        """
+        if self.specific_opt == []:                     # Default
+            self.sandpile_struct.show()
+        elif self.specific_opt[0] == "clique-indep":    # Clique-independent graph
+            [mu, nu] = self.specific_opt[1]
+            mu_num = sum(mu)
+            nu_num = sum(nu)
+            # Define the position of each vertex
+            positions = {0:(0,0)} | {i+1:(-np.sin(2*np.pi*i/(mu_num + nu_num)), np.cos(2*np.pi*i/(mu_num + nu_num)))  for i in range(mu_num + nu_num)}
+            # Define the color of each part
+            palette = rainbow(len(mu) + len(nu) + 1) # type: ignore
+            col = {palette[0]:[0]} | {palette[i+1]:self.perm_group[i] for i in range(len(nu) + len(mu))}
+
+            G = Graph(self.sandpile_struct.dict()).to_undirected() # type: ignore
+            
+            G.show(pos = positions, vertex_colors = col)
+            
+    
 
 def CliqueIndependent_SortedSandpile(mu, nu):   ## Specific type of Sandpile
     r"""
@@ -229,19 +257,14 @@ def CliqueIndependent_SortedSandpile(mu, nu):   ## Specific type of Sandpile
                                                                         # ...add all edges except for other vertices in part_nu    
         perm_group.append([part_first+j for j in range(part_nu)])       # Add the permutation orbit for the nu_part
         part_first += part_nu
-    for part_mu in mu:
+    mu_rev = copy.copy(mu)              # We need the reversed partition mu...
+    mu_rev.reverse()
+    for part_mu in mu_rev:
         for i in range(part_mu):
             d[part_first + i] = [vert for vert in range(mu_num + nu_num + 1) if vert != part_first + i]
         perm_group.append([part_first+j for j in range(part_mu)])       # Add the permutation orbit for the mu_part
         part_first += part_mu
     
     G = Graph(d)            # type: ignore      # Define the clique-independent graph
-    
-    #positions = {0:(0,0)} | {i+1:(-np.sin(2*np.pi*i/(mu_num + nu_num)), np.cos(2*np.pi*i/(mu_num + nu_num)))  for i in range(mu_num + nu_num)}
-    #G.show(pos = positions)
-    S = SortedSandpile(G, 0, perm_group)
-
+    S = SortedSandpile(G, 0, perm_group, ["clique-indep", [mu, nu]])
     return S
-
-
-################    FINIRE OPZIONI SPECIFICHE! 
