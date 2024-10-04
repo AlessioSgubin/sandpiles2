@@ -159,8 +159,10 @@ class SortedSandpile():
         ### TODO: check if the arguments given correspond to a good SandpileSortConfig
         
         self.sandpile_struct = Sandpile(graph, sink) # type: ignore                         # Define the Sandpile structure
-        self.perm_group = permut                                                            # 
+        self.perm_group = permut                                                            # Define the permutation group on the graph vertices
         self.specific_opt = opt                                                             # Define the specific options, to optimize in specific cases
+        self.sorted_rec = []                                                                # Eventually store the sorted recurrent configurations if computed
+
 
     def __repr__(self):                             ## Description of SortedSandpile class
         return "A sorted sandpile on vertices {} and sink {}.".format(self.sandpile_struct.vertices(), self.sandpile_struct.sink())
@@ -191,11 +193,35 @@ class SortedSandpile():
                     temp = SandpileSortConfig(self.sandpile_struct, simpl_rec[i], self.perm_group)
                     simpl_rec[i] = temp.sort()
                 simpl_rec.sort()                            # Remove duplicates
-                return list(simpl_rec for simpl_rec,_ in itertools.groupby(simpl_rec))
+                self.sorted_rec = list(simpl_rec for simpl_rec,_ in itertools.groupby(simpl_rec))
+                return self.sorted_rec
             
             case _:
                 raise Exception("The given option is not valid.")
             
+
+    def specific_sort_recurrents(self):
+        if self.sorted_rec != []:
+            if self.specific_opt != []:         # Order the configurations in a specific order
+                if self.specific_opt[0] == "clique-indep":          # Clique-independent graphs
+                    for conf in range(len(self.sorted_rec)):
+                        new_config = []
+                        [mu, nu] = self.specific_opt[1]
+                        for j in range(len(nu)):
+                            temp = copy.copy([self.sorted_rec[conf][i] for i in self.perm_group[j]])
+                            temp.sort()
+                            new_config = new_config + temp
+                        for j in range(len(mu)):
+                            temp = copy.copy([self.sorted_rec[conf][i] for i in self.perm_group[len(nu)+j]])
+                            temp.sort()
+                            temp.reverse()
+                            new_config = new_config + temp
+                        self.sorted_rec[conf] = new_config
+            else:
+                raise Exception("Sorted Sandpile has no specific option!")
+        else:
+            raise Exception("Sorted recurrent configurations not yet computed!")
+
     
     def qt_Polynomial(self, order = []):            ## Computes the q,t polynomial on (level, delay)
         r"""
@@ -203,10 +229,17 @@ class SortedSandpile():
 
             - order     : if specified, it fixes the reading order for the delay statistic.
         """
-        R = PolynomialRing(QQ, 'q, t')      # type: ignore
+        R = FractionField(QQ['q, t'])      # type: ignore
         q,t = R.gens()
         poly = 0*q*t                        # Define the polynomial as 0
-        for config in self.sorted_recurrents():
+
+        if self.sorted_rec == []:           # If sorted recurrents still to be computed...
+            self.sorted_recurrents()        # ...compute them!
+
+        if self.specific_opt != []:         # If there is a specific option...
+            self.specific_sort_recurrents() # ...sort in a particular way each configuration
+
+        for config in self.sorted_rec:      # Compute the polynomial
             sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group)
             q_exp = sortedconfig.level()
             t_exp = sortedconfig.delay(order = order)
@@ -241,7 +274,7 @@ class SortedSandpile():
             
     
 
-def CliqueIndependent_SortedSandpile(mu, nu):   ## Specific type of Sandpile
+def CliqueIndependent_SortedSandpile(mu, nu):       ## Specific type of Sandpile
     r"""
         Construction of a Sorted Sandpile on the clique-independent graph given by parameters mu and nu.
     """

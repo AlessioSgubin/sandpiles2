@@ -1,6 +1,6 @@
 ### Testing the new class SandpileSortCofig
 
-test_number = 3
+test_number = 3                     # Calcolo configurazioni Sandpile
 
 if test_number == 0:
 
@@ -13,7 +13,7 @@ if test_number == 0:
 
     print(C.is_recurrent())
 
-elif test_number == 1:
+elif test_number == 1:              # Controllo della funzionalità di Sorted Sandpile Configurations
 
     G = graphs.CompleteGraph(5)
     S = Sandpile(G, 0)
@@ -31,7 +31,7 @@ elif test_number == 1:
 
     print(C2.sort())
 
-elif test_number == 2:
+elif test_number == 2:              # Computare il qt-polynomial di grafi completi...
 
     G = graphs.CompleteGraph(6)
     S = SortedSandpile(G, 0, [[1,2,3,4]])
@@ -42,8 +42,27 @@ elif test_number == 2:
     poly = S.qt_Polynomial()
     print("Il polinomio associato al Sorted Sandpile è {}".format(poly))
 
-elif test_number == 3:
+elif test_number == 3:              # Computare il qt-polynomial di clique-independent
+    n = 2 + 1 + 2 + 1
+    mu = [2,1]
+    nu = [2,1]
+    Sym = SymmetricFunctions(FractionField(QQ['q','t']))
+    e = Sym.elementary()
+    h = Sym.homogeneous()
+    left = e([n]).nabla()
+    right = e(mu)*h(nu)
+    poly2 = left.scalar_qt(right)
+    #print("Fattore a sinistra è {}".format(left))
+    #print("Fattore a destra è {}".format(right))
+    print("Il polinomio ottenuto col prodotto scalare è {}".format(poly2))
 
-    S = CliqueIndependent_SortedSandpile([4,3],[3,2])
+    S = CliqueIndependent_SortedSandpile(mu, nu)
+    S.show()
+    print("Calcoliamo le configurazioni...")
+    S.sorted_recurrents()
+    print("Calcoliamo il polinomio...")
     poly = S.qt_Polynomial()
     print("Il polinomio associato al Sorted Sandpile è {}".format(poly))
+
+    check = (poly == poly2)
+    print("I due polinomi sono uguali? {}".format(check))
