@@ -105,8 +105,8 @@ class SandpileSortConfig():
         r"""
             Returns the level of the configuration.
         """
-        not_inc_sink = len(self.sandpile_struct.vertices()) - 1 - self.sandpile_struct.out_degree(self.sandpile_struct.sink())
-        return - not_inc_sink + self.sandpile_config.deg()
+        not_inc_sink = len(self.sandpile_struct.to_undirected().edges()) - self.sandpile_struct.out_degree(self.sandpile_struct.sink())
+        return (- not_inc_sink + self.sandpile_config.deg())
     
 
     def delay(self, order = [], check_rec = True):  ## Returns the delay statistic of the configuration
@@ -122,17 +122,18 @@ class SandpileSortConfig():
         nonsink_vert = list(self.sandpile_struct.nonsink_vertices())
 
         if order == []:                                     # No order has been assigned: take decreasing order
-            order = nonsink_vert
+            order = copy.copy(nonsink_vert)
             order.sort()
             order.reverse()
         
         delay = 0                                                   # The delay value
         loop_count = 0                                              # The loop count
-        not_toppled = nonsink_vert                                  # A list with the vertices still to be toppled
+        not_toppled = copy.copy(nonsink_vert)                                  # A list with the vertices still to be toppled
         self.topple_sink()                                  # Start by toppling the sink
         while len(not_toppled) > 0:
             for ind in order:                               # Search for non-toppled vertices in the right order
-                if (self.sandpile_struct.out_degree(ind) <= self.sandpile_config[ind]) and (ind in not_toppled):
+                value = self.sandpile_config[ind]
+                if (self.sandpile_struct.out_degree(ind) <= value) and (ind in not_toppled):
                                                             # Can be toppled!
                     delay += loop_count                             # Raise the delay by suitable amount
                     self.topple_vertex(ind)                         # Topple the vertex
@@ -191,9 +192,14 @@ class SortedSandpile():
                 simpl_rec = self.simple_recurrents()        # Compute all the recurrent configurations
                 for i in range(len(simpl_rec)):             # Reorder elements in each configuration
                     temp = SandpileSortConfig(self.sandpile_struct, simpl_rec[i], self.perm_group)
-                    simpl_rec[i] = temp.sort()
+                    X = temp.sort()
+                    simpl_rec[i] = [X[j] for j in list(X)]  # Change dictionary in list
                 simpl_rec.sort()                            # Remove duplicates
-                self.sorted_rec = list(simpl_rec for simpl_rec,_ in itertools.groupby(simpl_rec))
+                simpl_rec = list(simpl_rec for simpl_rec,_ in itertools.groupby(simpl_rec))
+                # Now back to a dictionary...
+                self.sorted_rec = []
+                for i in range(len(simpl_rec)):
+                    self.sorted_rec = self.sorted_rec + [{self.sandpile_struct.nonsink_vertices()[j]:simpl_rec[i][j] for j in range(len(simpl_rec[i]))}]
                 return self.sorted_rec
             
             case _:
@@ -205,17 +211,17 @@ class SortedSandpile():
             if self.specific_opt != []:         # Order the configurations in a specific order
                 if self.specific_opt[0] == "clique-indep":          # Clique-independent graphs
                     for conf in range(len(self.sorted_rec)):
-                        new_config = []
+                        new_config = {}
                         [mu, nu] = self.specific_opt[1]
                         for j in range(len(nu)):
                             temp = copy.copy([self.sorted_rec[conf][i] for i in self.perm_group[j]])
                             temp.sort()
-                            new_config = new_config + temp
+                            new_config = new_config | {self.perm_group[j][b]:temp[b] for b in range(len(self.perm_group[j]))}
                         for j in range(len(mu)):
                             temp = copy.copy([self.sorted_rec[conf][i] for i in self.perm_group[len(nu)+j]])
                             temp.sort()
                             temp.reverse()
-                            new_config = new_config + temp
+                            new_config = new_config | {self.perm_group[j][b]:temp[b] for b in range(len(self.perm_group[j]))}
                         self.sorted_rec[conf] = new_config
             else:
                 raise Exception("Sorted Sandpile has no specific option!")
@@ -223,7 +229,7 @@ class SortedSandpile():
             raise Exception("Sorted recurrent configurations not yet computed!")
 
     
-    def qt_Polynomial(self, order = []):            ## Computes the q,t polynomial on (level, delay)
+    def qt_Polynomial(self, ordered = []):            ## Computes the q,t polynomial on (level, delay)
         r"""
             Returns the q,t - polynomial corresponding to the sorted sandpile's recurrent configurations.
 
@@ -236,13 +242,14 @@ class SortedSandpile():
         if self.sorted_rec == []:           # If sorted recurrents still to be computed...
             self.sorted_recurrents()        # ...compute them!
 
+        # TODO: be sure that the delay doesn't depend on the order in the same orbit...
         if self.specific_opt != []:         # If there is a specific option...
             self.specific_sort_recurrents() # ...sort in a particular way each configuration
 
         for config in self.sorted_rec:      # Compute the polynomial
             sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group)
             q_exp = sortedconfig.level()
-            t_exp = sortedconfig.delay(order = order)
+            t_exp = sortedconfig.delay(order = ordered, check_rec=False)
             poly = poly + (q**q_exp) * (t**t_exp)
         return poly
     

@@ -1,6 +1,8 @@
 ### Testing the new class SandpileSortCofig
+from sage.combinat.q_analogues import qt_catalan_number
 
-test_number = 3                     # Calcolo configurazioni Sandpile
+
+#test_number = 2                     # Calcolo configurazioni Sandpile
 
 if test_number == 0:
 
@@ -34,18 +36,18 @@ elif test_number == 1:              # Controllo della funzionalità di Sorted Sa
 elif test_number == 2:              # Computare il qt-polynomial di grafi completi...
 
     G = graphs.CompleteGraph(6)
-    S = SortedSandpile(G, 0, [[1,2,3,4]])
+    S = SortedSandpile(G, 0, [[1,2,3,4,5]])
 
     lis = S.sorted_recurrents()
-    #print("In tutto sono {} elementi".format(len(lis)))
+    print("In tutto sono {} elementi".format(len(lis)))
 
     poly = S.qt_Polynomial()
     print("Il polinomio associato al Sorted Sandpile è {}".format(poly))
 
 elif test_number == 3:              # Computare il qt-polynomial di clique-independent
-    n = 2 + 1 + 2 + 1
-    mu = [2,1]
-    nu = [2,1]
+    n = 5
+    mu = [n]
+    nu = []
     Sym = SymmetricFunctions(FractionField(QQ['q','t']))
     e = Sym.elementary()
     h = Sym.homogeneous()
@@ -57,12 +59,34 @@ elif test_number == 3:              # Computare il qt-polynomial di clique-indep
     print("Il polinomio ottenuto col prodotto scalare è {}".format(poly2))
 
     S = CliqueIndependent_SortedSandpile(mu, nu)
-    S.show()
+    #S.show()
     print("Calcoliamo le configurazioni...")
     S.sorted_recurrents()
+    print(S.sorted_rec)
     print("Calcoliamo il polinomio...")
     poly = S.qt_Polynomial()
     print("Il polinomio associato al Sorted Sandpile è {}".format(poly))
 
     check = (poly == poly2)
     print("I due polinomi sono uguali? {}".format(check))
+    check = (poly == qt_catalan_number(n))
+    print("I due polinomi sono uguali? {}".format(check))
+
+elif test_number == 4:
+    S = CliqueIndependent_SortedSandpile([6],[])
+    lis = S.sorted_recurrents()
+    print(len(lis))
+
+    G = graphs.CompleteGraph(6)
+    T = SortedSandpile(G, 0, [[1,2,3,4,5]])
+    lis2 = T.sorted_recurrents()
+    print(len(lis2))
+
+elif test_number == 5:
+    seq = []
+    for i in range(5):
+        S = CliqueIndependent_SortedSandpile([i+1],[])
+        lis = S.sorted_recurrents()
+        seq = seq + [len(lis)]
+        print(seq)
+    oeis(seq)
