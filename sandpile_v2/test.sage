@@ -2,7 +2,7 @@
 from sage.combinat.q_analogues import qt_catalan_number
 
 
-#test_number = 2                     # Calcolo configurazioni Sandpile
+test_number = 5
 
 if test_number == 0:
 
@@ -46,14 +46,17 @@ elif test_number == 2:              # Computare il qt-polynomial di grafi comple
 
 elif test_number == 3:              # Computare il qt-polynomial di clique-independent
     n = 5
-    mu = [n]
-    nu = []
+    mu = [2,1]
+    nu = [2]
     Sym = SymmetricFunctions(FractionField(QQ['q','t']))
-    e = Sym.elementary()
-    h = Sym.homogeneous()
-    left = e([n]).nabla()
+    #e = SymmetricFunctions(QQ['q','t']).e()
+    #h = SymmetricFunctions(QQ['q','t']).h()
+    e = Sym.e()
+    h = Sym.h()
+    left = e([n])
+    left = left.nabla()
     right = e(mu)*h(nu)
-    poly2 = left.scalar_qt(right)
+    poly2 = left.scalar(right)
     #print("Fattore a sinistra è {}".format(left))
     #print("Fattore a destra è {}".format(right))
     print("Il polinomio ottenuto col prodotto scalare è {}".format(poly2))
@@ -69,8 +72,6 @@ elif test_number == 3:              # Computare il qt-polynomial di clique-indep
 
     check = (poly == poly2)
     print("I due polinomi sono uguali? {}".format(check))
-    check = (poly == qt_catalan_number(n))
-    print("I due polinomi sono uguali? {}".format(check))
 
 elif test_number == 4:
     S = CliqueIndependent_SortedSandpile([6],[])
@@ -82,11 +83,21 @@ elif test_number == 4:
     lis2 = T.sorted_recurrents()
     print(len(lis2))
 
-elif test_number == 5:
-    seq = []
-    for i in range(5):
-        S = CliqueIndependent_SortedSandpile([i+1],[])
-        lis = S.sorted_recurrents()
-        seq = seq + [len(lis)]
-        print(seq)
+elif test_number == 5:              # Test per alcune partizioni
+    n = 5
+    for i in range(n-1):
+        # Compute the qt-Poly
+        S = CliqueIndependent_SortedSandpile([n-i-1,1],[i])
+        poly_sand = S.qt_Polynomial()
+        # Compute the scalar product
+        Sym = SymmetricFunctions(FractionField(QQ['q','t']))
+        e = Sym.e()
+        h = Sym.h()
+        left = e([n])
+        left = left.nabla()
+        right = e([n-i-1,1])*h([i])
+        poly_Hall = left.scalar(right)
+
+        check = (poly_sand == poly_Hall)
+        print("Combinazione {},[{}] funziona? {}".format([n-i-1,1],i,check))
     oeis(seq)

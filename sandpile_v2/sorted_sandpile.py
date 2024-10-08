@@ -221,7 +221,7 @@ class SortedSandpile():
                             temp = copy.copy([self.sorted_rec[conf][i] for i in self.perm_group[len(nu)+j]])
                             temp.sort()
                             temp.reverse()
-                            new_config = new_config | {self.perm_group[j][b]:temp[b] for b in range(len(self.perm_group[j]))}
+                            new_config = new_config | {self.perm_group[len(nu) + j][b]:temp[b] for b in range(len(self.perm_group[len(nu) + j]))}
                         self.sorted_rec[conf] = new_config
             else:
                 raise Exception("Sorted Sandpile has no specific option!")
