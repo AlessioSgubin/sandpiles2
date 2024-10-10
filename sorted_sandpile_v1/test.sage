@@ -1,5 +1,6 @@
 ### Testing the new class SandpileSortCofig
 from sage.combinat.q_analogues import qt_catalan_number
+import time
 
 # Choose which test to run...
 test_number = 6
@@ -102,10 +103,11 @@ elif test_number == 5:              # Test per alcune partizioni
         print("Combinazione {},[{}] funziona? {}".format([n-i-1,1],i,check))
 
 elif test_number == 6:              # Test su tutte le combinazioni per n fissato
-    n = 5
+    n = 6
     Sym = SymmetricFunctions(FractionField(QQ['q','t']))
     e = Sym.e()
     h = Sym.h()
+    timing = []
     for m in range(n+1):
         if m == 0:
             Part1 = [[]]
@@ -118,16 +120,25 @@ elif test_number == 6:              # Test su tutte le combinazioni per n fissat
             Part2 = Partitions(n-m).list()
         for mu in Part1:
             for nu in Part2:
-                mu_l = list(mu)
-                nu_l = list(nu)
-                # Compute the qt-Poly
-                S = CliqueIndependent_SortedSandpile(mu_l,nu_l)
-                poly_sand = S.qt_Polynomial()
-                # Compute the scalar product
-                left = e([n])
-                left = left.nabla()
-                right = e(mu_l)*h(nu_l)
-                poly_Hall = left.scalar(right)
+                if len(mu) + len(nu) <= 3:
+                    t = time.time()         # Set timer
+                    mu_l = list(mu)
+                    nu_l = list(nu)
+                    # Compute the qt-Poly
+                    S = CliqueIndependent_SortedSandpile(mu_l,nu_l)
+                    poly_sand = S.qt_Polynomial(opt = 0)
+                    # Compute the scalar product
+                    left = e([n])
+                    left = left.nabla()
+                    right = e(mu_l)*h(nu_l)
+                    poly_Hall = left.scalar(right)
+                    # Check
+                    check = (poly_sand == poly_Hall)
+                    print("The q,t-polynomial for mu={} and nu={} works? {}".format(mu,nu,check))
+                    timing.append(time.time() - t)
+                if sum(timing) > 300:
+                    break
+    print("The time elapsed is {}".format(timing))
 
-                check = (poly_sand == poly_Hall)
-                print("The q,t-polynomial for mu={} and nu={} works? {}".format(mu,nu,check))
+elif test_number == 7:
+    S = CliqueIndependent_SortedSandpile([], [2,2,1])
