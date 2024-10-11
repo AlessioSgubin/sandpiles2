@@ -110,22 +110,7 @@ class SandpileSortConfig():
 
     def __deepcopy__(self, memo):
         r"""
-        Overrides the deepcopy method for dict.
-
-        INPUT:
-
-        ``memo`` -- (optional) dict
-
-        EXAMPLES::
-
-            sage: S = sandpiles.Diamond()
-            sage: c = SandpileConfig(S,[1,1,0])
-            sage: d = deepcopy(c)
-            sage: d[1] += 10
-            sage: c
-            {1: 1, 2: 1, 3: 0}
-            sage: d
-            {1: 11, 2: 1, 3: 0}
+            Overrides the deepcopy method for dict.
         """
         c = SandpileSortConfig(self.sandpile_struct, dict(self.sandpile_config), self.perm_group)
         c.sandpile_config.__dict__.update(self.sandpile_config.__dict__)
@@ -136,12 +121,6 @@ class SandpileSortConfig():
         r"""
             Checks if the two sorded configurations are the same or not.
         """
-        '''
-        if (self.sandpile_struct != other.sandpile_struct) or (self.perm_group != other.perm_group):    # Not comparable
-            raise Exception("The two sorted configurations are not comparable.")
-        else:
-            return self.sandpile_config == other.sandpile_config
-        '''
         return self.sandpile_config == other.sandpile_config
         
 
@@ -264,7 +243,7 @@ class SandpileSortConfig():
 
 class SortedSandpile():
 
-    def __init__(self, graph, sink, permut, opt=[]):            ## Initialize the class SortedSandpile
+    def __init__(self, graph, sink, permut, opt=[]):    ## Initialize the class SortedSandpile
         r"""
             Definition of the class SortedSandpile.
             
@@ -280,7 +259,7 @@ class SortedSandpile():
         self.sorted_rec = []                                                                # Eventually store the sorted recurrent configurations if computed
 
 
-    def __repr__(self):                             ## Description of SortedSandpile class
+    def __repr__(self):                                 ## Description of SortedSandpile class
         return "A sorted sandpile on vertices {} and sink {}.".format(self.sandpile_struct.vertices(), self.sandpile_struct.sink())
     
 
@@ -291,7 +270,7 @@ class SortedSandpile():
         return SandpileSortConfig(self.sandpile_struct, {v:self.sandpile_struct.out_degree(v)-1 for v in self.vertices}, self.perm_group)
 
 
-    def simple_recurrents(self):                    ## Computes the simple recurrents
+    def simple_recurrents(self):                        ## Computes the simple recurrents
         r"""
             Returns the list of recurrent configurations ignoring the action of perm_group.
 
@@ -300,7 +279,7 @@ class SortedSandpile():
         return self.sandpile_struct.recurrents()
     
 
-    def sorted_recurrents(self, option = 0):        ## Computes a list of all sorted recurrent configurations
+    def sorted_recurrents(self, option = 0):            ## Computes a list of all sorted recurrent configurations
         r"""
             Computes the sorted recurrent configurations.
 
@@ -310,7 +289,7 @@ class SortedSandpile():
         """
         match option:
             
-            case 0:                                                         ## OPTION 0
+            case 0:                                                         ## OPTION 0: computes all recurrents and then quotient by perm_group action
                 simpl_rec = self.simple_recurrents()        # Compute all the recurrent configurations
                 for i in range(len(simpl_rec)):             # Reorder elements in each configuration
                     temp = SandpileSortConfig(self.sandpile_struct, simpl_rec[i], self.perm_group)
@@ -322,18 +301,14 @@ class SortedSandpile():
                 self.sorted_rec = []
                 for i in range(len(simpl_rec)):
                     sort_dict = {self.vertices[j]:simpl_rec[i][j] for j in range(len(simpl_rec[i]))}
-                    #self.sorted_rec = self.sorted_rec + [ SandpileSortConfig(self.sandpile_struct, sort_dict, self.perm_group) ]
                     self.sorted_rec = self.sorted_rec + [sort_dict]
                 return self.sorted_rec
             
-            case 1:                                                         ## OPTION 1: modified version of 0
+            case 1:                                                         ## OPTION 1: modified version of 0, doesn't append the equivalent configurations
                 sorted_temp = []                    # Empty sorted_rec list         
                 active = [self._max_stable()]       # Start just with the maximal stable
-                #print(active[0].sandpile_config)
                 while active:                       # While the active list is non-empty...
-                    #print("Il prossimo è {} e in coda {}".format(active[0].sandpile_config, len(active)))
                     c = active.pop()
-                    #print(len(active))
                     sorted_temp.append(c)
                     for v in self.vertices:
                         cnext = deepcopy(c) # type: ignore                   # Deepcopy the configuration
@@ -348,36 +323,42 @@ class SortedSandpile():
 
             case _:
                 raise Exception("The given option is not valid.")
-            
-    '''
-    def specific_sorting_recurrents(self):
-        if self.sorted_rec != []:
-            if self.specific_opt != []:         # Order the configurations in a specific order
-                if self.specific_opt[0] == "clique-indep":          # Clique-independent graphs
-                    for conf in range(len(self.sorted_rec)):
-                        new_config = {}
-                        [mu, nu] = self.specific_opt[1]
-                        for j in range(len(nu)):
-                            temp = copy.copy([self.sorted_rec[conf][i] for i in self.perm_group[j]])
-                            temp.sort()
-                            new_config = new_config | {self.perm_group[j][b]:temp[b] for b in range(len(self.perm_group[j]))}
-                        for j in range(len(mu)):
-                            temp = copy.copy([self.sorted_rec[conf][i] for i in self.perm_group[len(nu)+j]])
-                            temp.sort()
-                            temp.reverse()
-                            new_config = new_config | {self.perm_group[len(nu) + j][b]:temp[b] for b in range(len(self.perm_group[len(nu) + j]))}
-                        self.sorted_rec[conf] = new_config
-            else:
-                raise Exception("Sorted Sandpile has no specific option!")
-        else:
-            raise Exception("Sorted recurrent configurations not yet computed!")
-    '''
     
-    def qt_Polynomial(self, ordered = [], opt = 1):            ## Computes the q,t polynomial on (level, delay)
+
+    def q_Polynomial(self, ordered = [], opt = 1):      ## Computes the q,t polynomial on (level, delay)
+        r"""
+            Returns the q - polynomial corresponding to the sorted sandpile's recurrent configurations.
+
+            - order     : if specified, it fixes the reading order for the delay statistic.
+            - opt       : if specified, it uses a different computing algorithm
+        """
+        R = FractionField(QQ['q'])      # type: ignore
+        q = R.gen()
+        poly = 0*q                        # Define the polynomial as 0
+
+        if self.sorted_rec == []:           # If sorted recurrents still to be computed...
+            self.sorted_recurrents(option=opt)        # ...compute them!
+        
+        # TODO: be sure that the delay doesn't depend on the order in the same orbit...
+
+        if ordered == []:                   # If there is no explicit order check for a specific one
+            if self.specific_opt[0] == "clique-indep":      # The reading order that defines delay...
+                ordered = self.specific_opt[2]
+                
+        for config in self.sorted_rec:      # Compute the polynomial
+            sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group, sort = False, verts = self.vertices)
+            q_exp = sortedconfig.level()
+            #print("Configurazione {} con livello {} e delay {}".format(sortedconfig.sandpile_config, q_exp, t_exp))
+            poly = poly + (q**q_exp)
+        return poly
+
+
+    def qt_Polynomial(self, ordered = [], opt = 1):     ## Computes the q,t polynomial on (level, delay)
         r"""
             Returns the q,t - polynomial corresponding to the sorted sandpile's recurrent configurations.
 
             - order     : if specified, it fixes the reading order for the delay statistic.
+            - opt       : if specified, it uses a different computing algorithm
         """
         R = FractionField(QQ['q, t'])      # type: ignore
         q,t = R.gens()
@@ -401,7 +382,7 @@ class SortedSandpile():
         return poly
     
     
-    def show(self):                                 ## Function that displays the Sorted Sandpile
+    def show(self):                                     ## Function that displays the Sorted Sandpile
         r"""
             This function plots the sorted sandpile.
 
@@ -410,9 +391,9 @@ class SortedSandpile():
             - clique-independent graph  : call to the Sandpile.show() function fixing the position of the vertices,
                                           the sink in the center and the nonsink in a circle.
         """
-        if self.specific_opt == []:                     # Default
+        if self.specific_opt == []:                         # Default
             self.sandpile_struct.show()
-        elif self.specific_opt[0] == "clique-indep":    # Clique-independent graph
+        elif self.specific_opt[0] == "clique-indep":        # Clique-independent graph
             [mu, nu] = self.specific_opt[1]
             mu_num = sum(mu)
             nu_num = sum(nu)
@@ -425,10 +406,27 @@ class SortedSandpile():
             G = Graph(self.sandpile_struct.dict()).to_undirected() # type: ignore
             
             G.show(pos = positions, vertex_colors = col)
+        elif self.specific_opt[0] == "gen-clique-indep":    # Generalized clique-independent graph
+            vertex_set = self.specific_opt[1].vertices()
+            cliq = []
+            indep = []
+            for vert in vertex_set:
+                if self.specific_opt[2][vert] > 0:
+                    cliq.append(vert)
+                else:
+                    indep.append(vert)
+            col = {'blue':cliq, 'red':indep}
+            self.specific_opt[1].show(vertex_colors = col)
             
-    
 
-def CliqueIndependent_SortedSandpile(mu, nu):       ## Specific type of Sandpile
+
+
+                    ########################################################
+                    #                   Specific Sandpiles                 #
+                    ########################################################
+
+
+def CliqueIndependent_SortedSandpile(mu, nu):           ## Specific type of Sandpile
     r"""
         Construction of a Sorted Sandpile on the clique-independent graph given by parameters mu and nu.
     """
@@ -456,7 +454,6 @@ def CliqueIndependent_SortedSandpile(mu, nu):       ## Specific type of Sandpile
     for i in range(len(mu)):
         temp = copy.copy(perm_group[len(perm_group)-i-1])
         temp.sort()
-        #temp.reverse()
         ordered = ordered + temp
     for j in range(len(nu)):
         temp = copy.copy(perm_group[len(nu)-j-1])
@@ -465,5 +462,67 @@ def CliqueIndependent_SortedSandpile(mu, nu):       ## Specific type of Sandpile
         ordered = ordered + temp
     
     G = Graph(d)            # type: ignore      # Define the clique-independent graph
-    S = SortedSandpile(G, 0, perm_group, ["clique-indep", [mu, nu], ordered])
+    specif_opt = ["clique-indep", [mu, nu], ordered]
+    '''
+        Specific Options:
+        1-  list of the defining partitions
+        2-  reading order
+    '''
+    S = SortedSandpile(G, 0, perm_group, specif_opt)
+    return S
+
+def General_CliqueIndependent_SortedSandpile(cells_graph, card_cell, order_cells = []):
+    r"""
+        Construction of a Sorted Sandpile on the generalized clique-independent graph. Arguments are a graph and a dictionary with values for vertices, such that:
+            - nodes:    represents a clique or an independent component with |card_cell[node]| vertices.
+                        If the sign of card_cell[node] is:
+                            - positive:     we have a clique.
+                            - negative:     we have an independent.
+            - edges:    each edge correspond to all possible edges between the two cells connected.
+    """
+    cell_list = cells_graph.vertices()
+    
+    if order_cells == []:
+        order_cells = copy.copy(cell_list)
+    
+    num_vert = sum([abs(card_cell[i]) for i in cell_list])      # Set the total number of vertices for sandpile
+
+    dict_cell = {}                                              # Dictionary "cell -> list vertices"
+    index_next_cell = 1
+    for cell in cell_list:
+        dict_cell = dict_cell | {cell:[index_next_cell + j for j in range(abs(card_cell[cell]))]}
+        index_next_cell += abs(card_cell[cell])
+    
+    edges_set = {0:[i+1 for i in range(num_vert)]}              # Set of edges, sink to everyone
+    perm_group = []                                             # Set the permutation group
+
+    now = 1
+    index_next_cell = 1
+    for cell in cell_list:                              # Add the cell
+        perm_group.append(dict_cell[cell])
+
+        for vert in range(abs(card_cell[cell])):
+            if card_cell[cell] > 0:                         # Add for clique
+                next_neigh = [0] + [index_next_cell + j for j in range(abs(card_cell[cell])) if index_next_cell + j != now]
+            else:                                           # Add nothing for independent
+                next_neigh = [0]
+            # Add complete edges with other cells...
+            for neigh_cell in cells_graph.neighbors(cell):
+                next_neigh = next_neigh + dict_cell[neigh_cell]
+
+            # Add to the dictionary
+            edges_set = edges_set | {now:next_neigh}
+            now += 1
+
+        index_next_cell += abs(card_cell[cell])
+    
+    G = Graph(edges_set)    #type: ignore
+    spec_opt = ["gen-clique-indep", cells_graph, card_cell, []]
+    '''
+        Specific Options:
+        1-  Cell graph
+        2-  Cell cardinality dictionary
+        3-  Reading order (TODO)
+    '''
+    S = SortedSandpile(G, 0, perm_group, spec_opt)
     return S

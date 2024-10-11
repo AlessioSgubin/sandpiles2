@@ -3,7 +3,7 @@ from sage.combinat.q_analogues import qt_catalan_number
 import time
 
 # Choose which test to run...
-test_number = 6
+test_number = 7
 
 if test_number == 0:
 
@@ -126,7 +126,7 @@ elif test_number == 6:              # Test su tutte le combinazioni per n fissat
                     nu_l = list(nu)
                     # Compute the qt-Poly
                     S = CliqueIndependent_SortedSandpile(mu_l,nu_l)
-                    poly_sand = S.qt_Polynomial(opt = 0)
+                    poly_sand = S.qt_Polynomial(opt = 1)
                     # Compute the scalar product
                     left = e([n])
                     left = left.nabla()
@@ -140,5 +140,7 @@ elif test_number == 6:              # Test su tutte le combinazioni per n fissat
                     break
     print("The time elapsed is {}".format(timing))
 
-elif test_number == 7:
-    S = CliqueIndependent_SortedSandpile([], [2,2,1])
+elif test_number == 7:              # Test per creazione del clique-indep generalizzato
+    G = Graph({ 0:[1],  1:[2]})
+    conf = {0: 2, 1:2, 3:2}
+    S = General_CliqueIndependent_SortedSandpile(G, conf)
