@@ -3,7 +3,7 @@ from sage.combinat.q_analogues import qt_catalan_number
 import time
 
 # Choose which test to run...
-test_number = 7
+test_number = 6
 
 if test_number == 0:
 

@@ -35,6 +35,7 @@ class SandpileSortConfig():
             self.vertices = sandp.nonsink_vertices()
         else:
             self.vertices = verts
+        self.sink = self.sandpile_struct.sink()                               # Define the sink vertex (efficiency!)
 
         if sort:
             # Reorder the configuration based on the permutation group
@@ -56,7 +57,7 @@ class SandpileSortConfig():
         
 
     def __repr__(self):                             ## Returns a description of the class Sandpile2
-        return "A sorted configuration for a sandpile with vertices {} and sink {}".format(self.sandpile_struct.vertices(), self.sandpile_struct.sink())
+        return "A sorted configuration for a sandpile with vertices {} and sink {}".format(self.sandpile_struct.vertices(), self.sink)
     
 
     def sandpile_struct(self):
@@ -122,7 +123,6 @@ class SandpileSortConfig():
             Checks if the two sorded configurations are the same or not.
         """
         return self.sandpile_config == other.sandpile_config
-        
 
     
     def is_recurrent(self):                         ## Check if the configuration is recurrent
@@ -147,8 +147,12 @@ class SandpileSortConfig():
         r"""
             Topple the sink and change the configuration stored.
         """
-        for vert in self.sandpile_struct.neighbors(self.sandpile_struct.sink()):
-            self.sandpile_config[vert] += 1
+        #for vert in self.sandpile_struct.neighbors(self.sandpile_struct.sink()):
+        #    self.sandpile_config[vert] += 1
+        c = dict(self.sandpile_config)
+        for e in self.sandpile_struct.outgoing_edge_iterator(self.sink):
+            c[e[1]] += e[2]
+        self.sandpile_config = SandpileConfig(self.sandpile_struct, c)    #type: ignore
         if sorting:
             self.sort()
         return self.sandpile_config
@@ -186,7 +190,8 @@ class SandpileSortConfig():
             The function calls the SandpileConfig.__invert__ function, then applies the sorting.
         """
         self.sandpile_config = ~self.sandpile_config
-        self.sort()
+        if sorting:
+            self.sort()
         return self.sandpile_config
 
 
@@ -194,7 +199,7 @@ class SandpileSortConfig():
         r"""
             Returns the level of the configuration.
         """
-        not_inc_sink = len(self.sandpile_struct.to_undirected().edges()) - self.sandpile_struct.out_degree(self.sandpile_struct.sink())
+        not_inc_sink = len(self.sandpile_struct.to_undirected().edges()) - self.sandpile_struct.out_degree(self.sink)
         return (- not_inc_sink + self.sandpile_config.deg())
     
 
@@ -260,7 +265,7 @@ class SortedSandpile():
 
 
     def __repr__(self):                                 ## Description of SortedSandpile class
-        return "A sorted sandpile on vertices {} and sink {}.".format(self.sandpile_struct.vertices(), self.sandpile_struct.sink())
+        return "A sorted sandpile on vertices {} and sink {}.".format(self.sandpile_struct.vertices(), self.sink)
     
 
     def _max_stable(self):
@@ -316,7 +321,7 @@ class SortedSandpile():
                         cnext.sandpile_config = ~cnext.sandpile_config       # Stabilize the new configuration
                         cnext.sort()
                         if (cnext not in active) and (cnext not in sorted_temp) and (cnext != c):            # If it is still to be discovered and not repeating...
-                            active.append(cnext)
+                            active.insert(0,cnext)                           # Instead of appending, put at the start of list!
                     # Now convert all SandpileSortConfig to dictionaries...
                     self.sorted_rec = [x.sandpile_config for x in sorted_temp]
                 return self.sorted_rec
