@@ -292,42 +292,40 @@ class SortedSandpile():
                 = 0     : calls the recurrent() function from Sandpile class [default]
                 = 1     : is a modified version of recurrent() function that ignores the same orbits all together
         """
-        match option:
-            
-            case 0:                                                         ## OPTION 0: computes all recurrents and then quotient by perm_group action
-                simpl_rec = self.simple_recurrents()        # Compute all the recurrent configurations
-                for i in range(len(simpl_rec)):             # Reorder elements in each configuration
-                    temp = SandpileSortConfig(self.sandpile_struct, simpl_rec[i], self.perm_group)
-                    X = temp.sort()
-                    simpl_rec[i] = [X[j] for j in list(X)]  # Change dictionary in list
-                simpl_rec.sort()                            # Remove duplicates
-                simpl_rec = list(simpl_rec for simpl_rec,_ in itertools.groupby(simpl_rec))
-                # Now back to a dictionary...
-                self.sorted_rec = []
-                for i in range(len(simpl_rec)):
-                    sort_dict = {self.vertices[j]:simpl_rec[i][j] for j in range(len(simpl_rec[i]))}
-                    self.sorted_rec = self.sorted_rec + [sort_dict]
-                return self.sorted_rec
-            
-            case 1:                                                         ## OPTION 1: modified version of 0, doesn't append the equivalent configurations
-                sorted_temp = []                    # Empty sorted_rec list         
-                active = [self._max_stable()]       # Start just with the maximal stable
-                while active:                       # While the active list is non-empty...
-                    c = active.pop()
-                    sorted_temp.append(c)
-                    for v in self.vertices:
-                        cnext = deepcopy(c) # type: ignore                   # Deepcopy the configuration
-                        cnext.sandpile_config[v] += 1                        # Add 1 to a vertex in the configuration
-                        cnext.sandpile_config = ~cnext.sandpile_config       # Stabilize the new configuration
-                        cnext.sort()
-                        if (cnext not in active) and (cnext not in sorted_temp) and (cnext != c):            # If it is still to be discovered and not repeating...
-                            active.insert(0,cnext)                           # Instead of appending, put at the start of list!
-                    # Now convert all SandpileSortConfig to dictionaries...
-                    self.sorted_rec = [x.sandpile_config for x in sorted_temp]
-                return self.sorted_rec
+        if option == 0:                                                         ## OPTION 0: computes all recurrents and then quotient by perm_group action
+            simpl_rec = self.simple_recurrents()        # Compute all the recurrent configurations
+            for i in range(len(simpl_rec)):             # Reorder elements in each configuration
+                temp = SandpileSortConfig(self.sandpile_struct, simpl_rec[i], self.perm_group)
+                X = temp.sort()
+                simpl_rec[i] = [X[j] for j in list(X)]  # Change dictionary in list
+            simpl_rec.sort()                            # Remove duplicates
+            simpl_rec = list(simpl_rec for simpl_rec,_ in itertools.groupby(simpl_rec))
+            # Now back to a dictionary...
+            self.sorted_rec = []
+            for i in range(len(simpl_rec)):
+                sort_dict = {self.vertices[j]:simpl_rec[i][j] for j in range(len(simpl_rec[i]))}
+                self.sorted_rec = self.sorted_rec + [sort_dict]
+            return self.sorted_rec
 
-            case _:
-                raise Exception("The given option is not valid.")
+        elif option == 1:                                                         ## OPTION 1: modified version of 0, doesn't append the equivalent configurations
+            sorted_temp = []                    # Empty sorted_rec list         
+            active = [self._max_stable()]       # Start just with the maximal stable
+            while active:                       # While the active list is non-empty...
+                c = active.pop()
+                sorted_temp.append(c)
+                for v in self.vertices:
+                    cnext = deepcopy(c) # type: ignore                   # Deepcopy the configuration
+                    cnext.sandpile_config[v] += 1                        # Add 1 to a vertex in the configuration
+                    cnext.sandpile_config = ~cnext.sandpile_config       # Stabilize the new configuration
+                    cnext.sort()
+                    if (cnext not in active) and (cnext not in sorted_temp) and (cnext != c):            # If it is still to be discovered and not repeating...
+                        active.insert(0,cnext)                           # Instead of appending, put at the start of list!
+                # Now convert all SandpileSortConfig to dictionaries...
+                self.sorted_rec = [x.sandpile_config for x in sorted_temp]
+            return self.sorted_rec
+
+        else:
+            raise Exception("The given option is not valid.")
     
 
     def q_Polynomial(self, ordered = [], opt = 1):      ## Computes the q,t polynomial on (level, delay)

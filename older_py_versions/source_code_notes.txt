@@ -1,0 +1,101 @@
+def _set_recurrents(self):
+        """
+        Computes ``_recurrents``, the variable holding the list of recurrent
+        configurations, when ``recurrents()`` is first called by a user.
+
+        EXAMPLES::
+
+            sage: s = sandpiles.Diamond()
+            sage: s._set_recurrents()
+            sage: '_recurrents' in s.__dict__
+            True
+        """
+        if self.name() == 'Complete sandpile graph':
+            n = self.num_verts()
+            self._recurrents = [SandpileConfig(self, [n - 1 - i for i in p])
+                                for p in ParkingFunctions(n - 1)]
+        elif self.name() == 'Cycle sandpile graph':
+            n = self.num_verts()
+            one = [1] * (n - 2)
+            self._recurrents = [SandpileConfig(self, [1] * (n - 1))] + [SandpileConfig(self, one[:i] + [0] + one[i:]) for i in range(n - 1)]
+        else:
+            self._recurrents = []
+            active = [self._max_stable]
+            while active:
+                c = active.pop()
+                self._recurrents.append(c)
+                for v in self._nonsink_vertices:
+                    cnext = deepcopy(c)
+                    cnext[v] += 1
+                    cnext = ~cnext
+                    if (cnext not in active) and (cnext not in self._recurrents):
+                        active.append(cnext)
+        self._recurrents = self._recurrents
+
+
+def recurrents(self, verbose=True):
+        r"""
+        The recurrent configurations. If ``verbose`` is ``False``, the
+        configurations are converted to lists of integers.
+
+        INPUT:
+
+        ``verbose`` -- (default: ``True``) boolean
+
+        OUTPUT:
+
+        list of recurrent configurations
+
+
+        EXAMPLES::
+
+            sage: r = Sandpile(graphs.HouseXGraph(),0).recurrents()
+            sage: r[:3]
+            [{1: 2, 2: 3, 3: 3, 4: 1}, {1: 1, 2: 3, 3: 3, 4: 0}, {1: 1, 2: 3, 3: 3, 4: 1}]
+            sage: sandpiles.Complete(4).recurrents(False)                               # needs sage.combinat
+            [[2, 2, 2],
+             [2, 2, 1],
+             [2, 1, 2],
+             [1, 2, 2],
+             [2, 2, 0],
+             [2, 0, 2],
+             [0, 2, 2],
+             [2, 1, 1],
+             [1, 2, 1],
+             [1, 1, 2],
+             [2, 1, 0],
+             [2, 0, 1],
+             [1, 2, 0],
+             [1, 0, 2],
+             [0, 2, 1],
+             [0, 1, 2]]
+            sage: sandpiles.Cycle(4).recurrents(False)
+            [[1, 1, 1], [0, 1, 1], [1, 0, 1], [1, 1, 0]]
+        """
+        if verbose:
+            return deepcopy(self._recurrents)
+        else:
+            return [r.values() for r in self._recurrents]
+
+
+def __deepcopy__(self, memo):
+        r"""
+        Overrides the deepcopy method for dict.
+
+        INPUT:
+
+        ``memo`` -- (optional) dict
+
+        EXAMPLES::
+
+            sage: S = sandpiles.Diamond()
+            sage: c = SandpileConfig(S,[1,1,0])
+            sage: d = deepcopy(c)
+            sage: d[1] += 10
+            sage: c
+            {1: 1, 2: 1, 3: 0}
+            sage: d
+            {1: 11, 2: 1, 3: 0}
+        """
+        c = SandpileConfig(self._sandpile, dict(self))
+        c.__dict__.update(self.__dict__)
