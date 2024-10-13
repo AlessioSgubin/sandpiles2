@@ -452,8 +452,8 @@ class SortedSandpile():
                     cliq.append(vert)
                 else:
                     indep.append(vert)
-            col = {'blue':cliq, 'red':indep}
-            self.specific_opt[1].show(vertex_colors = col)
+            col = {'lightblue':cliq, 'lightred':indep}
+            self.specific_opt[1].show(vertex_colors = col, vertex_labels=self.specific_opt[2])
             
 
 

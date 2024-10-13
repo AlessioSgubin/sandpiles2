@@ -105,10 +105,11 @@ if exp_num == 3:        #   Try the loop of independents (a,n) = (-2,3) which ha
 
 if exp_num == 4:        #   Try the loop of independents (a,n) = (-2,3) which has a 3 min computation time with option 1
     poly_list = []
-    for (a,n,option) in [(-3,2,2)]:
+    for (a,n,option) in [(1,3,2), (1,4,2), (1,5,2)]:
         print("Computing case a={} and n={} with option={}.".format(a,n,option))
         t = time.time()
-        ind_dict = {n:[0]}|{i:[i+1] for i in range(n)}  # Structure of gen independent/clique graph
+        ind_dict = {i:[i+1] for i in range(n)}          # FOR CHAIN
+        #ind_dict = {n:[0]}|{i:[i+1] for i in range(n)}  # FOR LOOP
         conf = {i:a for i in range(n+1)}                # All independents/cliques have "a" vertices
         G = Graph(ind_dict)
         S = General_CliqueIndependent_SortedSandpile(G, conf)
