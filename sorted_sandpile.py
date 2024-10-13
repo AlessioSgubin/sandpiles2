@@ -143,7 +143,14 @@ class SandpileSortConfig():
         return self.sandpile_config.is_stable()
 
 
-    def topple_sink(self, sorting = True):                          ## Topples the sink vertex
+    def deg(self):                                  ## Returns the degree of the configuration
+        r"""
+            Returns the degree of the configuration.
+        """
+        return self.sandpile_config.deg()
+
+
+    def topple_sink(self, sorting = True):          ## Topples the sink vertex
         r"""
             Topple the sink and change the configuration stored.
         """
@@ -270,7 +277,7 @@ class SortedSandpile():
 
     def _max_stable(self):
         r"""
-            Returns the maximal stable sorted configuration of the sandpile
+            Returns the maximal stable sorted configuration of the sandpile.
         """
         return SandpileSortConfig(self.sandpile_struct, {v:self.sandpile_struct.out_degree(v)-1 for v in self.vertices}, self.perm_group)
 
@@ -289,8 +296,9 @@ class SortedSandpile():
             Computes the sorted recurrent configurations.
 
             - option        : based on the value the search algorithm changes
-                = 0     : calls the recurrent() function from Sandpile class [default]
-                = 1     : is a modified version of recurrent() function that ignores the same orbits all together
+                = 0     : calls the recurrent() function from Sandpile class [default].
+                = 1     : is a modified version of recurrent() function that ignores the same orbits all together.
+                = 2     : modified version of the previous, where the duplicate search is more efficient since we sort by configuration degree.
         """
         if option == 0:                                                         ## OPTION 0: computes all recurrents and then quotient by perm_group action
             simpl_rec = self.simple_recurrents()        # Compute all the recurrent configurations
@@ -320,15 +328,41 @@ class SortedSandpile():
                     cnext.sort()
                     if (cnext not in active) and (cnext not in sorted_temp) and (cnext != c):            # If it is still to be discovered and not repeating...
                         active.insert(0,cnext)                           # Instead of appending, put at the start of list!
-                # Now convert all SandpileSortConfig to dictionaries...
-                self.sorted_rec = [x.sandpile_config for x in sorted_temp]
+            # Now convert all SandpileSortConfig to dictionaries...
+            self.sorted_rec = [x.sandpile_config for x in sorted_temp]
+            return self.sorted_rec
+        
+        elif option == 2:                                                         ## OPTION 2: modified version of 1 that sorts the recurrent configurations and active by degree (invariant for sorting).
+                                                                                  #            The idea is to make the search in active and sorted_temp more efficient.
+            max_deg = self._max_stable().deg()
+            sorted_temp = []                                                                    # Empty sorted_rec list     
+            sorted_dict = {i:[] for i in range(max_deg+1)}                                      # Empty sorted_rec dictionary, keyed by degree   
+            active = [self._max_stable()]                                                       # Empty active list
+            active_dict = {max_deg:[self._max_stable()]} | {i:[] for i in range(max_deg)}       # Empty active dictionary, keyed by degree
+            while active:                       # While the active list is non-empty...
+                c = active.pop()
+                deg_c = c.deg()
+                active_dict[deg_c].pop()
+                sorted_temp.append(c)               # Append to sorted list
+                sorted_dict[deg_c].insert(0,c)      # Append to sorted list dictionary
+                for v in self.vertices:
+                    cnext = deepcopy(c) # type: ignore                   # Deepcopy the configuration
+                    cnext.sandpile_config[v] += 1                        # Add 1 to a vertex in the configuration
+                    cnext.sandpile_config = ~cnext.sandpile_config       # Stabilize the new configuration
+                    cnext.sort()
+                    deg_cnext = cnext.deg()
+                    if (cnext not in active_dict[deg_cnext]) and (cnext not in sorted_dict[deg_cnext]) and (cnext != c):            # If it is still to be discovered and not repeating...
+                        active.insert(0,cnext)
+                        active_dict[deg_cnext].insert(0,cnext)
+            # Now convert all SandpileSortConfig to dictionaries...
+            self.sorted_rec = [x.sandpile_config for x in sorted_temp]
             return self.sorted_rec
 
         else:
             raise Exception("The given option is not valid.")
     
 
-    def q_Polynomial(self, ordered = [], opt = 1):      ## Computes the q,t polynomial on (level, delay)
+    def q_Polynomial(self, ordered = [], opt = 2):      ## Computes the q,t polynomial on (level, delay)
         r"""
             Returns the q - polynomial corresponding to the sorted sandpile's recurrent configurations.
 
@@ -356,7 +390,7 @@ class SortedSandpile():
         return poly
 
 
-    def qt_Polynomial(self, ordered = [], opt = 1):     ## Computes the q,t polynomial on (level, delay)
+    def qt_Polynomial(self, ordered = [], opt = 2):     ## Computes the q,t polynomial on (level, delay)
         r"""
             Returns the q,t - polynomial corresponding to the sorted sandpile's recurrent configurations.
 
