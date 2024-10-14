@@ -126,7 +126,7 @@ elif test_number == 6:              # Test su tutte le combinazioni per n fissat
                     nu_l = list(nu)
                     # Compute the qt-Poly
                     S = CliqueIndependent_SortedSandpile(mu_l,nu_l)
-                    poly_sand = S.qt_Polynomial(opt = 1)
+                    poly_sand = S.qt_Polynomial(opt = 3)
                     # Compute the scalar product
                     left = e([n])
                     left = left.nabla()
@@ -136,8 +136,6 @@ elif test_number == 6:              # Test su tutte le combinazioni per n fissat
                     check = (poly_sand == poly_Hall)
                     print("The q,t-polynomial for mu={} and nu={} works? {}".format(mu,nu,check))
                     timing.append(time.time() - t)
-                if sum(timing) > 300:
-                    break
     print("The time elapsed is {}".format(timing))
 
 elif test_number == 7:              # Test per creazione del clique-indep generalizzato

@@ -1,10 +1,30 @@
 import itertools
 import copy
+import pickle
 import numpy as np
+
+
+                    #####################################################
+                    #                Auxiliary Functions                #
+                    #####################################################
+
+
+def is_increasing_list(lst):
+    r"""
+        Checks if a list is weakly increasing.
+    """
+    i = 0
+    check = True
+    while i < len(lst)-1 and check:
+        check = (lst[i]<=lst[i+1])
+        i += 1
+    return check
+
 
                     #####################################################
                     #           Sorted Sandpile Configuration           #
                     #####################################################
+
 
 class SandpileSortConfig():
 
@@ -124,6 +144,15 @@ class SandpileSortConfig():
         return self.sandpile_config.is_stable()
 
 
+    def is_sorted(self):                            ## Check if the configuration has already been sorted
+        r"""
+            Check if the configuration has already been sorted.
+        """
+        for perm in self.perm_group:
+            conf = [self.sandpile_config[i] for i in perm]
+        return is_increasing_list(conf)
+
+
     def deg(self):                                  ## Returns the degree of the configuration
         r"""
             Returns the degree of the configuration.
@@ -236,7 +265,7 @@ class SandpileSortConfig():
 
 class SortedSandpile():
 
-    def __init__(self, graph, sink, permut, opt=[]):    ## Initialize the class SortedSandpile
+    def __init__(self, graph, sink, permut, opt=[], sort_rec = []):    ## Initialize the class SortedSandpile
         r"""
             Definition of the class SortedSandpile.
             
@@ -249,7 +278,7 @@ class SortedSandpile():
         self.vertices = self.sandpile_struct.nonsink_vertices()                             # Define the nonsink vertices
         self.perm_group = permut                                                            # Define the permutation group on the graph vertices
         self.specific_opt = opt                                                             # Define the specific options, to optimize in specific cases
-        self.sorted_rec = []                                                                # Eventually store the sorted recurrent configurations if computed
+        self.sorted_rec = sort_rec                                                          # Eventually store the sorted recurrent configurations if computed
 
 
     def __repr__(self):                                 ## Description of SortedSandpile class
@@ -433,10 +462,58 @@ class SortedSandpile():
                     cliq.append(vert)
                 else:
                     indep.append(vert)
-            col = {'lightblue':cliq, 'lightred':indep}
+            palette = rainbow(2)    #type: ignore
+            col = {palette[0]:cliq, palette[1]:indep}    #type: ignore
             self.specific_opt[1].show(vertex_colors = col, vertex_labels=self.specific_opt[2])
-            
+    
 
+    def export(self, saveopt=0, opt = 2):               ## Export informations for the Sorted Sandpile
+        r"""
+            This function returns the critical information of the sorted sandpile in a format that can be saved using pickle.
+            If saveopt = 0, the function returns a list with:
+                -   saveopt
+                -   a dictionary of the underlying graph
+                -   the sink of the sandpile
+                -   the permutation group
+                -   the specific options for the sandpile
+                -   the order of vertices for...
+                -   ...the list of sorted recurrents
+                -   the qt-polynomial associated to the sorted sandpile.
+        """
+        qt_poly = self.qt_Polynomial(opt = opt)
+        key_list = list(self.sorted_rec[0].keys())
+        conflist = [[conf[i] for i in key_list] for conf in self.sorted_rec]
+        return [saveopt, self.sandpile_struct.dict(), self.sandpile_struct.sink(), self.perm_group, self.specific_opt, key_list, conflist, qt_poly]
+
+
+    def save(self, namefile, saveopt=0, opt = 2):       ## Save the information on a file
+        r"""
+            This function saves the critical information of the sorted sandpile in a namefile
+        """
+        info = self.export(saveopt = saveopt, opt = opt)
+        
+        with open(namefile, 'wb') as handle:
+            pickle.dump(info, handle)
+    
+
+    def load(namefile):                                 ## Load the information for a Sandpile
+        r"""
+            This function reads a file and returns a sorted sandpile with the information.
+        """
+        with open(namefile, 'rb') as handle:
+            info = pickle.load(handle)
+
+        if info[0] == 0:
+            sorted_rec = []
+            keys = info[5]
+            for conf in info[6]:
+                sort_conf = {keys[i]:conf[i] for i in range(len(keys))}
+                sorted_rec.append(sort_conf)
+            S = SortedSandpile(info[1], info[2], info[3], opt=info[4], sort_rec = sorted_rec)
+            print("Loaded!")
+            return S
+        else:
+            raise ImportError("The file cannot be read.")
 
 
                     ########################################################
