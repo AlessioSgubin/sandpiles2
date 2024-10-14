@@ -90,25 +90,6 @@ class SandpileSortConfig():
         return sort_conf
     
 
-    def sort2(self, change = True):
-        r"""
-            Rearrange the configuration values by increasing order on each orbit.
-
-            If change is True, it modifies the configuration, if it is False, it just returns the sorted one.
-        """
-        temp_conf = deepcopy(self.sandpile_config)  #type: ignore
-        for part in self.perm_group:
-            if len(part) > 1:
-                temp = copy.copy([temp_conf[i] for i in part])
-                temp.sort()
-                for i in range(len(part)):
-                    temp_conf[part[i]] = temp[i]
-
-        if change:
-            self.sandpile_config = temp_conf # type: ignore
-        return temp_conf
-    
-
     def __deepcopy__(self, memo):
         r"""
             Overrides the deepcopy method for dict.
@@ -272,7 +253,7 @@ class SortedSandpile():
 
 
     def __repr__(self):                                 ## Description of SortedSandpile class
-        return "A sorted sandpile on vertices {} and sink {}.".format(self.sandpile_struct.vertices(), self.sink)
+        return "A sorted sandpile on vertices {} and sink {}.".format(self.sandpile_struct.vertices(), self.sandpile_struct.sink())
     
 
     def _max_stable(self):
@@ -465,7 +446,9 @@ class SortedSandpile():
 
 def CliqueIndependent_SortedSandpile(mu, nu):           ## Specific type of Sandpile
     r"""
-        Construction of a Sorted Sandpile on the clique-independent graph given by parameters mu and nu.
+        Construction of a Sorted Sandpile on the clique-independent graph given by parameters:
+            - mu    : partition associated to the number and size of cliques in the graph.
+            - nu    : partition associated to the number and size of independents in the graph.
     """
     mu_num = sum(mu)                                    # Number of independent vertices
     nu_num = sum(nu)                                    # Number of vertices in cliques
@@ -507,6 +490,7 @@ def CliqueIndependent_SortedSandpile(mu, nu):           ## Specific type of Sand
     '''
     S = SortedSandpile(G, 0, perm_group, specif_opt)
     return S
+
 
 def General_CliqueIndependent_SortedSandpile(cells_graph, card_cell, order_cells = []):
     r"""
@@ -553,6 +537,77 @@ def General_CliqueIndependent_SortedSandpile(cells_graph, card_cell, order_cells
 
         index_next_cell += abs(card_cell[cell])
     
+    G = Graph(edges_set)    #type: ignore
+    spec_opt = ["gen-clique-indep", cells_graph, card_cell, []]
+    '''
+        Specific Options:
+        1-  Cell graph
+        2-  Cell cardinality dictionary
+        3-  Reading order (TODO)
+    '''
+    S = SortedSandpile(G, 0, perm_group, spec_opt)
+    return S
+
+
+def MultiGeneral_CliqueIndependent_SortedSandpile(cells_graph, card_cell, multi_sink = 1, multiedge_cell = {}, order_cells = []):
+    r"""
+        Construction of a Sorted Sandpile on the generalized clique-independent graph. Arguments are a graph and a dictionary with values for vertices, such that:
+            - nodes:    represents a clique or an independent component with |card_cell[node]| vertices.
+                        If the sign of card_cell[node] is:
+                            - positive:     we have a clique.
+                            - negative:     we have an independent.
+            - edges:    each edge correspond to all possible edges between the two cells connected.
+        If multiedge_cell is non-empty, each clique will have edges of multeplicity multiedge_cell[node].
+        If cells_graph has multiple edges, the edges between components will be multiple.
+    """
+    cell_list = cells_graph.vertices()
+    
+    if order_cells == []:
+        order_cells = copy.copy(cell_list)
+    
+    num_vert = sum([abs(card_cell[i]) for i in cell_list])      # Set the total number of vertices for sandpile
+
+    dict_cell = {}                                              # Dictionary "cell -> list vertices"
+    index_next_cell = 1
+    for cell in cell_list:
+        dict_cell = dict_cell | {cell:[index_next_cell + j for j in range(abs(card_cell[cell]))]}
+        index_next_cell += abs(card_cell[cell])
+    
+    edges_set = {0:[i+1 for i in range(num_vert) for k in range(multi_sink)]}   # Set of edges, sink to everyone with multeplicity "multi_sink"
+    perm_group = []                                                             # Set the permutation group
+
+    now = 1
+    index_next_cell = 1
+    for cell in cell_list:                              # Add the cell
+        perm_group.append(dict_cell[cell])
+
+        for vert in range(abs(card_cell[cell])):
+            if card_cell[cell] > 0:                         # Add for clique
+                if cell in multiedge_cell.keys():               # If we have multiple edges...
+                    next_neigh = [0 for k in range(multi_sink)] + [index_next_cell + j for j in range(abs(card_cell[cell])) for k in range(multiedge_cell[cell]) if index_next_cell + j != now]
+                else:                                           # If not...
+                    next_neigh = [0 for k in range(multi_sink)] + [index_next_cell + j for j in range(abs(card_cell[cell])) if index_next_cell + j != now]
+            else:                                           # Add nothing for independent
+                next_neigh = [0 for k in range(multi_sink)]
+            # Add complete edges with other cells...
+            for neigh_cell in cells_graph.neighbors(cell):
+                multi = list(cells_graph.edges(labels=False)).count((cell, neigh_cell))
+                next_neigh = next_neigh + [x for x in dict_cell[neigh_cell] for k in range(multi)]
+
+            # Add to the dictionary
+            edges_set = edges_set | {now:next_neigh}
+            now += 1
+
+        index_next_cell += abs(card_cell[cell])
+    
+    # Conversion to sage-math's format
+    multi_edges_set = {}
+    for v in range(num_vert + 1):
+        vertex_dict = {}
+        for w in set(edges_set[v]):
+            vertex_dict = vertex_dict | {w:list(edges_set[v]).count(w)}
+        multi_edges_set = multi_edges_set | {v:vertex_dict}
+    # Construct the graph
     G = Graph(edges_set)    #type: ignore
     spec_opt = ["gen-clique-indep", cells_graph, card_cell, []]
     '''
