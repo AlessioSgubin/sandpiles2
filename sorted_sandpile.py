@@ -417,8 +417,10 @@ class SortedSandpile():
         # TODO: be sure that the delay doesn't depend on the order in the same orbit...
 
         if ordered == []:                   # If there is no explicit order check for a specific one
-            if self.specific_opt[0] == "clique-indep":      # The reading order that defines delay...
+            if self.specific_opt[0] == "clique-indep":          # The reading order that defines delay...
                 ordered = self.specific_opt[2]
+            elif self.specific_opt[0] == "gen.clique-indep":
+                ordered = self.specific_opt[3]
                 
         for config in self.sorted_rec:      # Compute the polynomial
             sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group, sort = False, verts = self.vertices)
@@ -510,7 +512,6 @@ class SortedSandpile():
                 sort_conf = {keys[i]:conf[i] for i in range(len(keys))}
                 sorted_rec.append(sort_conf)
             S = SortedSandpile(info[1], info[2], info[3], opt=info[4], sort_rec = sorted_rec)
-            print("Loaded!")
             return S
         else:
             raise ImportError("The file cannot be read.")
@@ -590,6 +591,10 @@ def General_CliqueIndependent_SortedSandpile(cells_graph, card_cell, order_cells
     for cell in cell_list:
         dict_cell = dict_cell | {cell:[index_next_cell + j for j in range(abs(card_cell[cell]))]}
         index_next_cell += abs(card_cell[cell])
+
+    order = []                                                  # Reading order for qt-Polynomials
+    for cell in order_cells:                                    
+        order = order + dict_cell[cell]
     
     edges_set = {0:[i+1 for i in range(num_vert)]}              # Set of edges, sink to everyone
     perm_group = []                                             # Set the permutation group
@@ -613,9 +618,9 @@ def General_CliqueIndependent_SortedSandpile(cells_graph, card_cell, order_cells
             now += 1
 
         index_next_cell += abs(card_cell[cell])
-    
+
     G = Graph(edges_set)    #type: ignore
-    spec_opt = ["gen-clique-indep", cells_graph, card_cell, []]
+    spec_opt = ["gen-clique-indep", cells_graph, card_cell, order]
     '''
         Specific Options:
         1-  Cell graph
@@ -650,6 +655,10 @@ def MultiGeneral_CliqueIndependent_SortedSandpile(cells_graph, card_cell, multi_
         dict_cell = dict_cell | {cell:[index_next_cell + j for j in range(abs(card_cell[cell]))]}
         index_next_cell += abs(card_cell[cell])
     
+    order = []                                                  # Reading order for qt-Polynomials
+    for cell in order_cells:                                    
+        order = order + dict_cell[cell]
+
     edges_set = {0:[i+1 for i in range(num_vert) for k in range(multi_sink)]}   # Set of edges, sink to everyone with multeplicity "multi_sink"
     perm_group = []                                                             # Set the permutation group
 
@@ -686,7 +695,7 @@ def MultiGeneral_CliqueIndependent_SortedSandpile(cells_graph, card_cell, multi_
         multi_edges_set = multi_edges_set | {v:vertex_dict}
     # Construct the graph
     G = Graph(edges_set)    #type: ignore
-    spec_opt = ["gen-clique-indep", cells_graph, card_cell, []]
+    spec_opt = ["gen-clique-indep", cells_graph, card_cell, order]
     '''
         Specific Options:
         1-  Cell graph

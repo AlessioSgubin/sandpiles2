@@ -126,7 +126,7 @@ elif test_number == 6:              # Test su tutte le combinazioni per n fissat
                     nu_l = list(nu)
                     # Compute the qt-Poly
                     S = CliqueIndependent_SortedSandpile(mu_l,nu_l)
-                    poly_sand = S.qt_Polynomial(opt = 3)
+                    poly_sand = S.qt_Polynomial(opt = 2)
                     # Compute the scalar product
                     left = e([n])
                     left = left.nabla()
