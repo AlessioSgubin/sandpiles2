@@ -417,10 +417,11 @@ class SortedSandpile():
         # TODO: be sure that the delay doesn't depend on the order in the same orbit...
 
         if ordered == []:                   # If there is no explicit order check for a specific one
-            if self.specific_opt[0] == "clique-indep":          # The reading order that defines delay...
+            if self.specific_opt[0] == "clique-indep" or self.specific_opt[0] == "mul-clique-indep":          # The reading order that defines delay...
                 ordered = self.specific_opt[2]
-            elif self.specific_opt[0] == "gen.clique-indep":
+            elif self.specific_opt[0] == "gen-clique-indep" or self.specific_opt[0] == "mulgen-clique-indep":
                 ordered = self.specific_opt[3]
+            
                 
         for config in self.sorted_rec:      # Compute the polynomial
             sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group, sort = False, verts = self.vertices)
@@ -441,7 +442,10 @@ class SortedSandpile():
                                           the sink in the center and the nonsink in a circle.
         """
         if self.specific_opt == []:                         # Default
-            self.sandpile_struct.show()
+            if self.sandpile_struct.has_multiple_edges():
+                self.sandpile_struct.show(edge_labels=True)
+            else:
+                self.sandpile_struct.show()
         elif self.specific_opt[0] == "clique-indep":        # Clique-independent graph
             [mu, nu] = self.specific_opt[1]
             mu_num = sum(mu)
@@ -455,7 +459,7 @@ class SortedSandpile():
             G = Graph(self.sandpile_struct.dict()).to_undirected() # type: ignore
             
             G.show(pos = positions, vertex_colors = col)
-        elif self.specific_opt[0] == "gen-clique-indep":    # Generalized clique-independent graph
+        elif self.specific_opt[0] == "gen-clique-indep":        # Generalized clique-independent graph
             vertex_set = self.specific_opt[1].vertices()
             cliq = []
             indep = []
@@ -467,6 +471,31 @@ class SortedSandpile():
             palette = rainbow(2)    #type: ignore
             col = {palette[0]:cliq, palette[1]:indep}    #type: ignore
             self.specific_opt[1].show(vertex_colors = col, vertex_labels=self.specific_opt[2])
+        elif self.specific_opt[0] == "mul-clique-indep":            # Multi clique-independent graph
+            [mu, nu] = self.specific_opt[1]
+            mu_num = sum(mu)
+            nu_num = sum(nu)
+            # Define the position of each vertex
+            positions = {0:(0,0)} | {i+1:(-np.sin(2*np.pi*i/(mu_num + nu_num)), np.cos(2*np.pi*i/(mu_num + nu_num)))  for i in range(mu_num + nu_num)}
+            # Define the color of each part
+            palette = rainbow(len(mu) + len(nu) + 1) # type: ignore
+            col = {palette[0]:[0]} | {palette[i+1]:self.perm_group[i] for i in range(len(nu) + len(mu))}
+
+            G = Graph(self.sandpile_struct.dict()).to_undirected() # type: ignore
+            
+            G.show(pos = positions, vertex_colors = col, edge_labels = True)
+        elif self.specific_opt[0] == "mulgen-clique-indep":    # Multi generalized clique-independent graph
+            vertex_set = self.specific_opt[1].vertices()
+            cliq = []
+            indep = []
+            for vert in vertex_set:
+                if self.specific_opt[2][vert] > 0:
+                    cliq.append(vert)
+                else:
+                    indep.append(vert)
+            palette = rainbow(2)    #type: ignore
+            col = {palette[0]:cliq, palette[1]:indep}    #type: ignore
+            self.specific_opt[1].show(vertex_colors = col, vertex_labels=self.specific_opt[2], edge_labels=True)
     
 
     def export(self, saveopt=0, opt = 2):               ## Export informations for the Sorted Sandpile
@@ -631,6 +660,57 @@ def General_CliqueIndependent_SortedSandpile(cells_graph, card_cell, order_cells
     return S
 
 
+def Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1):
+    r"""
+        Construction of the Sorted Sandpile, given two partitions mu, nu, where edges have multeplicity k in each clique and multeplicity h between components.
+    """
+    if hmul == -1:     # If third argument is not given, assume it is equal to k
+        hmul = kmul
+
+    mu_num = sum(mu)                                    # Number of independent vertices
+    nu_num = sum(nu)                                    # Number of vertices in cliques
+    d = {0 : [i+1 for i in range(mu_num + nu_num)]}     # Initialize the dictionary that will define the graph, link the sink to each vertex
+    perm_group = []                                     # Initialize the permutation group acting on the graph
+
+    part_first = 1                                      # Keeps track of first vertex of current part
+    for part_nu in nu:                                          # Add edges for independent vertices. For each part...
+        for i in range(part_nu):                                        # ...for each vertex in the part...
+            d[part_first + i] = [0] + [vert for vert in range(mu_num + nu_num + 1) for mult in range(hmul) if ((0 < vert) and (vert < part_first)) or (vert >= part_first + part_nu)]
+                                                                        # ...add all edges except for other vertices in part_nu    
+        perm_group.append([part_first+j for j in range(part_nu)])       # Add the permutation orbit for the nu_part
+        part_first += part_nu
+    mu_rev = copy.copy(mu)                                              # We need the reversed partition mu...
+    mu_rev.reverse()
+    for part_mu in mu_rev:                                      # Add edges for clique sets. For each part...
+        for i in range(part_mu):
+            clique = [vert for vert in range(mu_num + nu_num + 1) for mult in range(kmul) if (part_first <= vert) and (vert < part_first + part_mu) and (vert != part_first + i)]
+            others = [vert for vert in range(mu_num + nu_num + 1) for mult in range(hmul) if ((0 < vert) and (vert < part_first)) or (vert >= part_first + part_mu)]
+            d[part_first + i] = [0] + clique + others
+        perm_group.append([part_first+j for j in range(part_mu)])       # Add the permutation orbit for the mu_part
+        part_first += part_mu
+
+    ordered = []
+    for i in range(len(mu)):
+        temp = copy.copy(perm_group[len(perm_group)-i-1])
+        temp.sort()
+        ordered = ordered + temp
+    for j in range(len(nu)):
+        temp = copy.copy(perm_group[len(nu)-j-1])
+        temp.sort()
+        temp.reverse()
+        ordered = ordered + temp
+    
+    G = Graph(d)            # type: ignore      # Define the clique-independent graph
+    specif_opt = ["mul-clique-indep", [mu, nu],  ordered, kmul, hmul]
+    '''
+        Specific Options:
+        1-  list of the defining partitions
+        2-  reading order
+    '''
+    S = SortedSandpile(G, 0, perm_group, specif_opt)
+    return S
+
+
 def MultiGeneral_CliqueIndependent_SortedSandpile(cells_graph, card_cell, multi_sink = 1, multiedge_cell = {}, order_cells = []):
     r"""
         Construction of a Sorted Sandpile on the generalized clique-independent graph. Arguments are a graph and a dictionary with values for vertices, such that:
@@ -695,7 +775,7 @@ def MultiGeneral_CliqueIndependent_SortedSandpile(cells_graph, card_cell, multi_
         multi_edges_set = multi_edges_set | {v:vertex_dict}
     # Construct the graph
     G = Graph(edges_set)    #type: ignore
-    spec_opt = ["gen-clique-indep", cells_graph, card_cell, order]
+    spec_opt = ["mulgen-clique-indep", cells_graph, card_cell, order]
     '''
         Specific Options:
         1-  Cell graph

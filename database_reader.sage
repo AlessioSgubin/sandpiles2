@@ -12,13 +12,22 @@ import os
 
 
 dir_path = 'database'               # Directory/folder path
-sandp_files = []                    # List to store files
+search_prompt = "CHC_01"                # Search prompt
+
+sandp_list = []                    # List to store files
 
 for file_path in os.listdir(dir_path):                      # Iterate directory
     if os.path.isfile(os.path.join(dir_path, file_path)):   # Check if current file_path is a file
-        sandp_files.append(file_path)
+        sandp_list.append(file_path)
 
-sandp_files.sort()                  # Sort names in the list
+sandp_list.sort()                  # Sort names in the list
+sandp_files = []
+
+if seach_prompt != "":
+    m = len(search_prompt)
+    for entry in sandp_list:
+        if entry[0:m] == search_prompt:
+            sandp_files.append(entry)
 
 for name in sandp_files:
     namefile = str(dir_path + "/" + name)

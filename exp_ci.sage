@@ -3,7 +3,7 @@ from sage.combinat.q_analogues import qt_catalan_number
 import time
 
 # Choose which test to run...
-test_number = 6
+#test_number = 8
 
 if test_number == 0:
 
@@ -142,3 +142,107 @@ elif test_number == 7:              # Test per creazione del clique-indep genera
     G = Graph({ 0:[1],  1:[2]})
     conf = {0: 2, 1:2, 3:2}
     S = General_CliqueIndependent_SortedSandpile(G, conf)
+
+elif test_number == 8:              # Test su tutte le combinazioni per n fissato, per edge multipli
+    n = 5
+    kmul = 2
+    hmul = 2
+    Sym = SymmetricFunctions(FractionField(QQ['q','t']))
+    e = Sym.e()
+    h = Sym.h()
+    timing = []
+    for m in range(n+1):
+        if m == 0:
+            Part1 = [[]]
+            Part2 = Partitions(n-m).list()
+        elif m == n:
+            Part1 = Partitions(m).list()
+            Part2 = [[]]
+        else:
+            Part1 = Partitions(m).list()
+            Part2 = Partitions(n-m).list()
+        for mu in Part1:
+            for nu in Part2:
+                if len(mu) + len(nu) <= 3:
+                    t = time.time()         # Set timer
+                    mu_l = list(mu)
+                    nu_l = list(nu)
+                    # Compute the qt-Poly
+                    S = Multi_CliqueIndependent_SortedSandpile(mu_l,nu_l,kmul,hmul)
+                    poly_sand = S.qt_Polynomial(opt = 2)
+                    '''
+                    # Compute the scalar product
+                    left = e([n])
+                    left = left.nabla()
+                    right = e(mu_l)*h(nu_l)
+                    poly_Hall = left.scalar(right)
+                    # Check
+                    check = (poly_sand == poly_Hall)
+                    print("The q,t-polynomial for mu={} and nu={} works? {}".format(mu,nu,check))
+                    '''
+                    poly1 = poly_sand(q = 1)
+                    poly2 = poly_sand(t = 1)
+                    check = (poly1 == poly2)
+                    print("Partitions mu = {} and nu = {} is: {}".format(mu, nu, check))
+                    print("Polynomials: {}\t\t\t{}\n".format(poly1,poly2))
+                    #print("Using partitions mu = {} and nu = {} we get:\n\t{}".format(mu,nu,poly_sand))
+                    timing.append(time.time() - t)
+    print("The time elapsed is {}".format(timing))
+
+elif test_number == 9:              # Test su tutte le combinazioni per n fissato, per edge multipli
+    n = 5
+    kmul = 3
+    hmul = 3
+    R.<q> = PolynomialRing(QQbar)
+    T.<t> = PolynomialRing(QQbar)
+    Sym = SymmetricFunctions(FractionField(QQ['q','t']))
+    e = Sym.e()
+    h = Sym.h()
+    timing = []
+    for m in range(n+1):
+        if m == 0:
+            Part1 = [[]]
+            Part2 = Partitions(n-m).list()
+        elif m == n:
+            Part1 = Partitions(m).list()
+            Part2 = [[]]
+        else:
+            Part1 = Partitions(m).list()
+            Part2 = Partitions(n-m).list()
+        for mu in Part1:
+            for nu in Part2:
+                if len(mu) + len(nu) <= 3:
+                    t = time.time()         # Set timer
+                    mu_l = list(mu)
+                    nu_l = list(nu)
+                    # Compute the qt-Poly
+                    S = Multi_CliqueIndependent_SortedSandpile(mu_l,nu_l,kmul,hmul)
+                    poly_sand = S.qt_Polynomial(opt = 2)
+                    '''
+                    # Compute the scalar product
+                    left = e([n])
+                    left = left.nabla()
+                    right = e(mu_l)*h(nu_l)
+                    poly_Hall = left.scalar(right)
+                    # Check
+                    check = (poly_sand == poly_Hall)
+                    print("The q,t-polynomial for mu={} and nu={} works? {}".format(mu,nu,check))
+                    '''
+                    poly1 = poly_sand(q = 1)
+                    poly2 = poly_sand(t = 1)
+                    check = (poly1 == poly2)
+                    print("Partitions mu = {} and nu = {} is: {}".format(mu, nu, check))
+
+                    # Compute the degrees
+                    deg1 = poly1.degree()
+                    deg2 = poly2.degree()
+                    int_poly1 = T(poly1)
+                    int_poly2 = R(poly2)
+                    coeffs1 = int_poly1.coefficients(sparse = False)
+                    coeffs2 = int_poly2.coefficients(sparse = False)
+                    mindeg1 = min([i for i in range(len(coeffs1)) if coeffs1[i] != 0])
+                    mindeg2 = min([i for i in range(len(coeffs2)) if coeffs2[i] != 0])
+
+                    print("Max/min q-degree: {}\t\t Max/min t-degree: {}\n".format((deg2, mindeg2), (deg1, mindeg1)))
+                    timing.append(time.time() - t)
+    print("The time elapsed is {}".format(timing))

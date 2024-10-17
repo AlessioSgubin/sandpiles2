@@ -5,7 +5,7 @@
 from sage.combinat.q_analogues import qt_catalan_number
 import time
 
-exp_num = 5         #####   EXPERIMENT NUMBER
+exp_num = 6         #####   EXPERIMENT NUMBER
 
 if exp_num == 0:        #   Try a chain of independent/clique sets: two parameters (a,n):
                         #       a   : vertices in one independent/clique
@@ -126,3 +126,19 @@ if exp_num == 5:
     conf = {0:-2, 1:-2, 2:-2}# 3:-2}#, 4:1, 5:1}
     G = Graph(ind_dict)
     S = MultiGeneral_CliqueIndependent_SortedSandpile(G,conf)
+
+if exp_num == 6:
+    R = FractionField(QQ['q, t, x'])      # type: ignore
+    q,t,x = R.gens()
+    test = "database/CHC_01_04.ssdp"
+    S = SortedSandpile.load(test)
+    S.show()
+    print("Loaded!")
+    for part in Permutations(5):
+        poly1 = S.qt_Polynomial(ordered = part)
+        poly2 = poly1(q = x)
+        poly2 = poly2(t = q)
+        poly2 = poly2(x = t)
+        check = (poly1 == poly2)
+        print("Permutation {} and symmetry in (q,t) is {}".format(part, check))
+        print("{}\t\t{}".format(poly1(t=1), poly1(q=1)))

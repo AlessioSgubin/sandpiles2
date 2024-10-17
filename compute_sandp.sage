@@ -16,12 +16,12 @@ import pickle
 import time
 import os.path
 
-type_test = "ICI"   # Type of sandpile
+type_test = "CHC"   # Type of sandpile
 verbose = True     # Print stats about the sandpile
 override = False    # If file already present, re-compute or not?
 
 if type_test == "CHC":
-    for test in [(1,2,2),(2,2,2),(1,3,2),(1,4,2),(1,5,2),(1,6,2),(2,3,2),(3,2,2)]:
+    for test in [(1,7,2),(1,8,2),(1,9,2),(1,10,2)]:
         a = test[0]
         n = test[1]
         option = test[2]
