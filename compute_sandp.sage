@@ -111,10 +111,10 @@ if type_test == "LPC":
         else:
             print("The sorted sandpile {} is already in the database.\n".format(namefile))
 
-#type_test = "LPI"
+type_test = "LPI"
 
 if type_test == "LPI":
-    for test in [(2,1,2),(2,2,2),(2,3,2),(3,1,2),(4,1,2),(5,1,2),(3,2,2)]:
+    for test in [(1,2,2),(1,9,2),(1,10,2)]:
         a = test[0]
         n = test[1]
         option = test[2]
@@ -142,7 +142,7 @@ if type_test == "LPI":
         else:
             print("The sorted sandpile {} is already in the database.\n".format(namefile))
 
-type_test = "ICC"
+#type_test = "ICC"
 
 if type_test == "ICC":
     for test in [(2,3,2),(3,1,2),(3,2,2)]:
@@ -173,7 +173,7 @@ if type_test == "ICC":
         else:
             print("The sorted sandpile {} is already in the database.\n".format(namefile))
 
-type_test = "ICI"
+#type_test = "ICI"
 
 if type_test == "ICI":
     for test in [(2,3,2),(3,1,2),(3,2,2)]:

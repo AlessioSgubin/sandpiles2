@@ -12,7 +12,7 @@ import os
 
 
 dir_path = 'database'               # Directory/folder path
-search_prompt = "CHC_01"                # Search prompt
+search_prompt = "LPI_01"                # Search prompt
 
 sandp_list = []                    # List to store files
 
@@ -23,7 +23,7 @@ for file_path in os.listdir(dir_path):                      # Iterate directory
 sandp_list.sort()                  # Sort names in the list
 sandp_files = []
 
-if seach_prompt != "":
+if search_prompt != "":
     m = len(search_prompt)
     for entry in sandp_list:
         if entry[0:m] == search_prompt:
@@ -50,8 +50,8 @@ for name in sandp_files:
     t_poly = qt_poly(q = 1)
     num = qt_poly(q = 1, t = 1)
     print("Sorted Sandpile: {}".format(name))
-    print("qt-poly: \t\t\t{}".format(qt_poly))
+    #print("qt-poly: \t\t\t{}".format(qt_poly))
     print(" q-poly: \t\t\t{}".format(q_poly))
-    print(" t-poly: \t\t\t{}".format(t_poly))
+    #print(" t-poly: \t\t\t{}".format(t_poly))
     print(" number: \t\t\t{}\n".format(num))
 

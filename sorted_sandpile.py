@@ -257,6 +257,21 @@ class SandpileSortConfig():
         return delay
     
 
+    def show(self, sink = True, colors = False, heights = False, directed = False):                                 ## Returns a drawing of the configuration
+        r"""
+            Returns a drawing of the sorted sandpile configuration.
+        """
+        # Define the color of each part
+        palette = rainbow(len(self.perm_group)+1) # type: ignore
+        if sink:
+            col = {palette[0]:[self.sink]} | {palette[i+1]:self.perm_group[i] for i in range(len(self.perm_group))}
+        else:
+            col = {palette[i+1]:self.perm_group[i] for i in range(len(self.perm_group))}
+        
+        # Call SandpileConfig.show()
+        self.sandpile_config.show(sink = sink, colors = colors, heights = heights, directed = directed, vertex_colors = col)
+    
+
 
 
                     #####################################################
@@ -285,11 +300,32 @@ class SortedSandpile():
         return "A sorted sandpile on vertices {} and sink {}.".format(self.sandpile_struct.vertices(), self.sandpile_struct.sink())
     
 
-    def _max_stable(self):
+    def _max_stable(self):                              ## Returns maximal stable configuration
         r"""
             Returns the maximal stable sorted configuration of the sandpile.
         """
         return SandpileSortConfig(self.sandpile_struct, {v:self.sandpile_struct.out_degree(v)-1 for v in self.vertices}, self.perm_group)
+    
+    
+    def nonsink_vertices(self):                         ## Returns non-sink vertices
+        r"""
+            Returns the non-sink vertices of the sorted sandpile.
+        """
+        return self.sandpile_struct.nonsink_vertices()
+    
+
+    def sink(self):                                     ## Returns sink
+        r"""
+            Returns the sink of the sorted sandpile.
+        """
+        return self.sandpile_struct.sink()
+    
+
+    def sandpile(self):                                 ## Returns the unsorted sandpile
+        r"""
+            Returns the sandpile without sorting.
+        """
+        return self.sandpile_struct
 
 
     def simple_recurrents(self):                        ## Computes the simple recurrents
