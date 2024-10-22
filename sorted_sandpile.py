@@ -327,6 +327,13 @@ class SortedSandpile():
         """
         return self.sandpile_struct
 
+    
+    def reduced_laplacian(self):                        ## Reduced Laplacian
+        r"""
+            Returns the reduced Laplacian matrix of the sandpile.
+        """
+        return self.sandpile_struct.reduced_laplacian()
+
 
     def simple_recurrents(self):                        ## Computes the simple recurrents
         r"""
@@ -408,22 +415,21 @@ class SortedSandpile():
             raise Exception("The given option is not valid.")
     
 
-    def q_Polynomial(self, ordered = [], opt = 2):      ## Computes the q,t polynomial on (level, delay)
+    def q_Polynomial(self, ordered = [], opt = 2, override = False):      ## Computes the q,t polynomial on (level, delay)
         r"""
             Returns the q - polynomial corresponding to the sorted sandpile's recurrent configurations.
 
             - order     : if specified, it fixes the reading order for the delay statistic.
-            - opt       : if specified, it uses a different computing algorithm
+            - opt       : if specified, it uses a different computing algorithm.
+            - override  _ if specified, the sorted recurrents are computed even if sorted_rec is non-empty.
         """
         R = FractionField(QQ['q'])      # type: ignore
         q = R.gen()
-        poly = 0*q                        # Define the polynomial as 0
+        poly = 0*q                                  # Define the polynomial as 0
 
-        if self.sorted_rec == []:           # If sorted recurrents still to be computed...
-            self.sorted_recurrents(option=opt)        # ...compute them!
+        if self.sorted_rec == [] or override:       # If sorted recurrents still to be computed...
+            self.sorted_recurrents(option=opt)          # ...compute them!
         
-        # TODO: be sure that the delay doesn't depend on the order in the same orbit...
-
         if ordered == []:                   # If there is no explicit order check for a specific one
             if self.specific_opt[0] == "clique-indep":      # The reading order that defines delay...
                 ordered = self.specific_opt[2]
@@ -436,18 +442,19 @@ class SortedSandpile():
         return poly
 
 
-    def qt_Polynomial(self, ordered = [], opt = 2):     ## Computes the q,t polynomial on (level, delay)
+    def qt_Polynomial(self, ordered = [], opt = 2, override = False):     ## Computes the q,t polynomial on (level, delay)
         r"""
             Returns the q,t - polynomial corresponding to the sorted sandpile's recurrent configurations.
 
             - order     : if specified, it fixes the reading order for the delay statistic.
-            - opt       : if specified, it uses a different computing algorithm
+            - opt       : if specified, it uses a different computing algorithm.
+            - override  : if specified, the sorted recurrents are computed even if sorted_rec is non-empty.
         """
         R = FractionField(QQ['q, t'])      # type: ignore
         q,t = R.gens()
-        poly = 0*q*t                        # Define the polynomial as 0
+        poly = 0*q*t                            # Define the polynomial as 0
 
-        if self.sorted_rec == []:           # If sorted recurrents still to be computed...
+        if self.sorted_rec == [] or override:   # If sorted recurrents still to be computed...
             self.sorted_recurrents(option=opt)        # ...compute them!
         
         # TODO: be sure that the delay doesn't depend on the order in the same orbit...
@@ -467,6 +474,71 @@ class SortedSandpile():
             poly = poly + (q**q_exp) * (t**t_exp)
         return poly
     
+
+    def associated_ring(self, coeff_ring, sorted = True):   ## Compute the associated ring
+        r"""
+            Compute the ring associated to the sorted sandpile. The possible arguments are:
+                - coeff_ring    : specify the coefficient ring for the polynomial ring.
+                - sorted        : boolean, indicates if the considered sandpile is sorted (optional, default is True).
+
+            The function returns a list with the quotient ring and a tuple with the polynomial ring and the ideal.
+        """
+        # Define the multivariate polynomial ring
+        R = PolynomialRing(coeff_ring, ['x%s'%v for v in self.vertices])    #type: ignore
+        t = R.gens()
+        x = {self.vertices[i]:t[i] for i in range(len(self.vertices))}      # Dictionary with variables
+
+        # Create a list with generators for the ideal
+        ideal_gens = []
+        for v in self.vertices:         # Toppling polynomials
+            poly = - x[v]**(self.sandpile_struct.out_degree(v)) + R.prod([x[e[1]] for e in self.sandpile_struct.edges(v, labels = False) if e[1] in self.vertices])
+            ideal_gens.append(poly)
+        if sorted:                      # Permutation group relations
+            for subgr in self.perm_group:
+                # Create permutation matrix
+                A = matrix(R, [[x[v] - x[w] for w in subgr] for v in subgr])     #type: ignore
+                poly = A.det()
+                ideal_gens.append(poly)
+        I = R.ideal(ideal_gens)         # Define the ideal
+
+        # Define the quotient ring
+        S = R.quotient(I)
+
+        return [S, (R, I)]
+    
+
+    def sortrec_ideal(self, coeff_ring, sorted = True, opt = 2, override = False):     ## Compute the sorted recurrent ideal
+        r"""
+            Compute the ideal to sorted recurrents. The possible arguments are:
+                - coeff_ring    : specify the coefficient ring for the polynomial ring.
+                - sorted        : boolean, it indicates if the considered sandpile is sorted (optional, default is True).
+                - opt           : option for computing sorted recurrents (optional).
+                - override      : boolean, if true the sorted recurrents are computed even if sorted_rec is non-empty (optional, default is False)
+
+            The function returns a list with the quotient ring, the polynomial ring and the ideal.
+        """
+        if self.sorted_rec == [] or override:                       # Computes the sorted recurrents if necessary
+            self.sorted_recurrents(option = opt)
+
+        S,(R,I) = self.associated_ring(coeff_ring, sorted=sorted)     # Construct the associated ring
+        t = R.gens()
+        tbar = S.gens()
+        x = {self.vertices[i]:t[i] for i in range(len(self.vertices))}      # Dictionary with variables
+        xbar = {self.vertices[i]:tbar[i] for i in range(len(self.vertices))}      # Dictionary with variables
+        
+        ideal_gens = []                                             # Compute ideal generators for R
+        for conf in self.sorted_rec:
+            poly = R.prod([x[v]**conf[v] for v in self.vertices])
+            ideal_gens.append(poly)
+        J = R.ideal(ideal_gens)
+        ideal_gens = []                                             # Compute ideal generators for S
+        for conf in self.sorted_rec:
+            poly = S.prod([xbar[v]**conf[v] for v in self.vertices])
+            ideal_gens.append(poly)
+        Jbar = S.ideal(ideal_gens)
+
+        return [(S,Jbar),(R,I,J)]
+
     
     def show(self):                                     ## Function that displays the Sorted Sandpile
         r"""
@@ -816,7 +888,7 @@ def MultiGeneral_CliqueIndependent_SortedSandpile(cells_graph, card_cell, multi_
         Specific Options:
         1-  Cell graph
         2-  Cell cardinality dictionary
-        3-  Reading order (TODO)
+        3-  Reading order
     '''
     S = SortedSandpile(G, 0, perm_group, spec_opt)
     return S

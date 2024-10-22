@@ -122,8 +122,8 @@ if exp_num == 4:        #   Try the loop of independents (a,n) = (-2,3) which ha
         print("Sorted recurrents: {}\n".format(q_poly(q=1,t=1)))
 
 if exp_num == 5:
-    ind_dict = {0:[1], 1:[2,2]}#, 2:[3,3,3]}, 3:[4,4,4,4], 4:[5,5,5,5,5]}
-    conf = {0:-2, 1:-2, 2:-2}# 3:-2}#, 4:1, 5:1}
+    ind_dict = {0:[1], 1:[2,2], 2:[3,3,3], 3:[4,4,4,4], 4:[5,5,5,5,5]}
+    conf = {0:-2, 1:-2, 2:-2, 3:-2, 4:-2, 5:-2}
     G = Graph(ind_dict)
     S = MultiGeneral_CliqueIndependent_SortedSandpile(G,conf)
 

@@ -12,9 +12,9 @@ import os
 
 
 dir_path = 'database'               # Directory/folder path
-search_prompt = "LPI_01"                # Search prompt
+search_prompt = "CHC"               # Search prompt
 
-sandp_list = []                    # List to store files
+sandp_list = []                     # List to store files
 
 for file_path in os.listdir(dir_path):                      # Iterate directory
     if os.path.isfile(os.path.join(dir_path, file_path)):   # Check if current file_path is a file
