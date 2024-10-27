@@ -58,7 +58,7 @@ The following list contains all methods implemented for `SortedSandpile` class.
     Details:
     - INPUT : the arguments are
         - `opt = 2`         : if specified (default is `2`) it chooses the algorithm to compute sorted recurrents.
-        - 'override = False': if specified (default is `False`) and is `True` the sorted recurrents are re-computed even if the list is already non-empty.
+        - `override = False`: if specified (default is `False`) and is `True` the sorted recurrents are re-computed even if the list is already non-empty.
     - OUTPUT: the q-polynomial, contained in `FractionField(QQ['q'])`.
 
 -   `qt_Polynomial(ordered = [], opt = 2, override = False)`
@@ -66,24 +66,93 @@ The following list contains all methods implemented for `SortedSandpile` class.
     
     Details:
     - INPUT : the arguments are
-        - `ordered = []`    : if specified (default is `[]`) it defines the reading order for computing delay.
+        - `ordered = []`    : if specified it defines the reading order for computing delay.
         - `opt = 2`         : if specified (default is `2`) it chooses the algorithm to compute sorted recurrents.
-        - 'override = False': if specified (default is `False`) and is `True` the sorted recurrents are re-computed even if the list is already non-empty.
+        - `override = False`: if specified (default is `False`) and is `True` the sorted recurrents are re-computed even if the list is already non-empty.
     - OUTPUT: the q-polynomial, contained in `FractionField(QQ['q'])`.
 
--   `associated_ring`
+-   `associated_ring(coeff_ring, order = [], homog = False)`
+    The function returns a tuple with a polynomial ring and it's toppling ideal.
 
--   `symm_poly`
+    Details:
+    - INPUT : the arguments are
+        - `coeff_ring`      : it is the coefficient ring for the polynomials.
+        - `order = []`      : if specified it is the order in which variables $x_i$ are associated to vertices.
+        - `homog = False`   : if specified (default is `False`) and `True`, we associate a variable to the sink.
+    - OUTPUT: a 2-tuple consisting of the polynomial ring and the ideal associated to the topplings in the sandpile.
 
--   `sortrec_ideal`
+-   `symm_poly(coeff_ring, config, order = [])`
+    The function returns the simmetric polynomial where each monomial is associated to one of the equivalent configurations under the action that "sorts" the sandpile.
 
--   `show`
+    Details:
+    - INPUT : the arguments are
+        - `coeff_ring`  : it is the coefficient ring for the polynomials.
+        - `config`      : the configuration to which the polynomial is associated.
+        - `order = []`  : if specified it is the order in which variables $x_i$ are associated to vertices.
+    - OUTPUT: the polynomial symmetric over the vertices associated to the "sorting" of the sandpile.
 
--   `export`
+-   `sortrec_ideal(coeff_ring, sorted = True, opt = 2, override = False, order = [], homog = False)`
+    The function computes the ideal in the associated ring containing the polynomials linked to (sorted) configurations.
+    _This function is still under construction, since there is no meaningful way of defining the association between configurations and polynomials._
 
--   `save`
+    Details:
+    - INPUT : the arguments are
+        - `coeff_ring`      : it is the coefficient ring for the polynomials.
+        - `sorted = True`   : if specified (default is `True`) and `True` the ring and the ideal are constructed considering the sorted sandpile and not just the sandpile.
+        - `opt = 2`         : if specified (default is `2`) it chooses which algorithm to use when calling `SortedSandpile.sorted_recurrents()`.
+        - `override = False`: if specified (default is `False`) and `True` the function computes the (sorted recurrents) even if the list `SortedSandpile.sorted_rec` is non-empty.
+        - `order = []`      : if specified it is the order in which variables $x_i$ are associated to vertices.
+        - `homog = False`   : if specified (default is `False`) and `True` we associate a variable to the sink.
+    - OUTPUT: a 3-tuple consisting of the polynomial ring, the toppling ideal and the ideal associated to (sorted) recurrents.
 
--   `load`
+-   `show()`
+    This function displays a representation of the sorted sandpile. Depending on the specific options of the class object, the drawing may differ:
+    - `default`             : it calls the function `Sandpile.show()` ignoring the "sorted" structure.
+    - `clique-indep`        : if the sorted sandpile was created calling `CliqueIndependent_SortedSandpile()`, the representation displays vertices on a wheel (the sink is at the center) and the vertices are placed as defined in the article [[1](https://arxiv.org/abs/2401.06488)]. Colors are used to distinguish different orbits under the action on the sandpile.
+    - `gen-clique-indep`    : it displays the cliques and independents as nodes on a graph where edges indicate the relations between components. The color coding is used to differ cliques (in blue) and independents (in red).
+    - `mul-clique-indep`    : it is similar to `default` but edges are labeled with their multiplicities.
+    - `mulgen-clique-indep` : it is similar to `gen-clique-indep` but edges are labeled with their multiplicities.
+
+    Details:
+    - INPUT : the arguments are
+        - `default = False` : if specified (default is `False`) and `True`, the function follows the `default` setting even if specific options for the sorted sandpile are present.
+    - OUTPUT: none.
+
+-   `export(saveopt = 0, opt = 2)`
+    This function returns the critical information of the sorted sandpile in a format that can be saved using pickle.
+    If `saveopt = 0` (which is the only implemented option), the function returns a list with:
+        -   saveopt
+        -   a dictionary of the underlying graph
+        -   the sink of the sandpile
+        -   the permutation group
+        -   the specific options for the sandpile
+        -   the order of vertices for...
+        -   ...the list of sorted recurrents
+        -   the qt-polynomial associated to the sorted sandpile.
+    
+    Details:
+    - INPUT : the arguments are
+        - `saveopt = 0` : if specified (default is `0`) it changes the exporting format, according to the description above.
+        - `opt = 2`     : if specified (default is `2`) it indicates with which algorithm to compute the sorted recurrents.
+    - OUTPUT: a list with all information explained above.
+
+-   `save(namefile, saveopt = 0, opt = 2)`
+    This function saves the critical information on the sandpile obtained via `SortedSandpile.extract()` and saves it to the specified location.
+
+    Details:
+    - INPUT : the arguments are 
+        - `namefile`    : it indicates where to save the file. If `namefile = "PATH/NAME.EXT"` then the informations are saved in `current_dir/PATH/NAME.EXT`.
+        - `saveopt = 0` : it is the option `saveopt` passed to `SortedSandpile.export()` function to decide the format for critical information.
+        - `opt = 2`     : it is the option `opt` passed to `SortedSandpile.export()` function to compute the list of sorted recurrents.
+    - OUTPUT: none.
+
+-   `load(namefile)`
+    This function returns the sorted sandpile saved in a given file location.
+
+    Details:
+    - INPUT : the arguments are
+        - `namefile`    : it indicates which file to read. If `namefile = "PATH/NAME.EXT"` then the function search a file located at `current_dir/PATH/NAME.EXT`.
+    - OUTPUT: a class `SortedSandpile` obtained from the given file.
 
 
 ## Methods for Sorted Configurations

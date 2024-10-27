@@ -471,11 +471,10 @@ class SortedSandpile():
         return poly
     
 
-    def associated_ring(self, coeff_ring, sorted = True, order = [], homog = False):   ## Compute the associated ring
+    def associated_ring(self, coeff_ring, order = [], homog = False):   ## Compute the associated ring
         r"""
             Compute the ring associated to the sorted sandpile. The possible arguments are:
                 - coeff_ring    : specify the coefficient ring for the polynomial ring.
-                - sorted        : boolean, indicates if the considered sandpile is sorted (optional, default is True).
                 - order         : the vertex order associated to variables x0, ..., xn (optional).
                 - homog         : asks whether to construct the homogeneous ideal or not (optional, default is False).
 
@@ -594,16 +593,17 @@ class SortedSandpile():
             return (R,I,J)
     
     
-    def show(self):                                     ## Function that displays the Sorted Sandpile
+    def show(self, default = False):                                     ## Function that displays the Sorted Sandpile
         r"""
-            This function plots the sorted sandpile.
+            This function plots the sorted sandpile. The possible arguments are:
+            - basic = False : if True, the representation is the same as Sandpile.show().
 
             If specific_opt is non-empty, the show function uses specific parameters:
             - default                   : call to the Sandpile.show() function
             - clique-independent graph  : call to the Sandpile.show() function fixing the position of the vertices,
                                           the sink in the center and the nonsink in a circle.
         """
-        if self.specific_opt == []:                         # Default
+        if self.specific_opt == [] or default:                         # Default
             if self.sandpile_struct.has_multiple_edges():
                 self.sandpile_struct.show(edge_labels=True)
             else:
@@ -660,7 +660,7 @@ class SortedSandpile():
             self.specific_opt[1].show(vertex_colors = col, vertex_labels=self.specific_opt[2], edge_labels=True)
     
 
-    def export(self, saveopt=0, opt = 2):               ## Export informations for the Sorted Sandpile
+    def export(self, saveopt = 0, opt = 2):               ## Export informations for the Sorted Sandpile
         r"""
             This function returns the critical information of the sorted sandpile in a format that can be saved using pickle.
             If saveopt = 0, the function returns a list with:
@@ -679,7 +679,7 @@ class SortedSandpile():
         return [saveopt, self.sandpile_struct.dict(), self.sandpile_struct.sink(), self.perm_group, self.specific_opt, key_list, conflist, qt_poly]
 
 
-    def save(self, namefile, saveopt=0, opt = 2):       ## Save the information on a file
+    def save(self, namefile, saveopt = 0, opt = 2):       ## Save the information on a file
         r"""
             This function saves the critical information of the sorted sandpile in a namefile
         """
