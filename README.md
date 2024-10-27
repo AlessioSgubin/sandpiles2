@@ -77,10 +77,6 @@ The following list contains all methods implemented for `SortedSandpile` class.
 
 -   `sortrec_ideal`
 
--   `associated_homog_ring`
-
--   `sorterec_homog_ideal`
-
 -   `show`
 
 -   `export`

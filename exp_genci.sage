@@ -3,9 +3,10 @@
 #   These are some tests for particular structures of generalized clique-independent sorted sandpiles
 
 from sage.combinat.q_analogues import qt_catalan_number
+from sage.rings.polynomial.hilbert import first_hilbert_series, hilbert_poincare_series
 import time
 
-exp_num = 6         #####   EXPERIMENT NUMBER
+exp_num = 7         #####   EXPERIMENT NUMBER
 
 if exp_num == 0:        #   Try a chain of independent/clique sets: two parameters (a,n):
                         #       a   : vertices in one independent/clique
@@ -142,3 +143,13 @@ if exp_num == 6:
         check = (poly1 == poly2)
         print("Permutation {} and symmetry in (q,t) is {}".format(part, check))
         print("{}\t\t{}".format(poly1(t=1), poly1(q=1)))
+
+if exp_num == 7:
+    S = CliqueIndependent_SortedSandpile([2],[])
+    (R,I,J) = S.sortrec_ideal(QQ, homog=True)
+
+    K = I.intersection(J)
+    pK = hilbert_poincare_series(K)
+    pJ = hilbert_poincare_series(J)
+
+    print(pK-pJ)

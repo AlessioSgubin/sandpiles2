@@ -335,13 +335,13 @@ class SortedSandpile():
         return self.sandpile_struct.reduced_laplacian()
 
 
-    def simple_recurrents(self):                        ## Computes the simple recurrents
+    def simple_recurrents(self, verbose = True):                        ## Computes the simple recurrents
         r"""
             Returns the list of recurrent configurations ignoring the action of perm_group.
 
             It's a call of the recurrents() function from Sandpile class.
         """
-        return self.sandpile_struct.recurrents()
+        return self.sandpile_struct.recurrents(verbose = verbose)
     
 
     def sorted_recurrents(self, option = 0):            ## Computes a list of all sorted recurrent configurations
@@ -415,7 +415,7 @@ class SortedSandpile():
             raise Exception("The given option is not valid.")
     
 
-    def q_Polynomial(self, ordered = [], opt = 2, override = False):      ## Computes the q,t polynomial on (level, delay)
+    def q_Polynomial(self, opt = 2, override = False):      ## Computes the q,t polynomial on (level, delay)
         r"""
             Returns the q - polynomial corresponding to the sorted sandpile's recurrent configurations.
 
@@ -430,10 +430,6 @@ class SortedSandpile():
         if self.sorted_rec == [] or override:       # If sorted recurrents still to be computed...
             self.sorted_recurrents(option=opt)          # ...compute them!
         
-        if ordered == []:                   # If there is no explicit order check for a specific one
-            if self.specific_opt[0] == "clique-indep":      # The reading order that defines delay...
-                ordered = self.specific_opt[2]
-                
         for config in self.sorted_rec:      # Compute the polynomial
             sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group, sort = False, verts = self.vertices)
             q_exp = sortedconfig.level()
@@ -475,70 +471,128 @@ class SortedSandpile():
         return poly
     
 
-    def associated_ring(self, coeff_ring, sorted = True):   ## Compute the associated ring
+    def associated_ring(self, coeff_ring, sorted = True, order = [], homog = False):   ## Compute the associated ring
         r"""
             Compute the ring associated to the sorted sandpile. The possible arguments are:
                 - coeff_ring    : specify the coefficient ring for the polynomial ring.
                 - sorted        : boolean, indicates if the considered sandpile is sorted (optional, default is True).
+                - order         : the vertex order associated to variables x0, ..., xn (optional).
+                - homog         : asks whether to construct the homogeneous ideal or not (optional, default is False).
 
             The function returns a list with the quotient ring and a tuple with the polynomial ring and the ideal.
         """
-        # Define the multivariate polynomial ring
-        R = PolynomialRing(coeff_ring, ['x%s'%v for v in self.vertices])    #type: ignore
-        t = R.gens()
-        x = {self.vertices[i]:t[i] for i in range(len(self.vertices))}      # Dictionary with variables
+        if not homog:                                           ## Not homogeneous
+            # Define the multivariate polynomial ring
+            R = PolynomialRing(coeff_ring, ['x%s'%v for v in range(len(self.vertices))])    #type: ignore
+            t = R.gens()
+            if order == []:
+                x = {self.vertices[i]:t[i] for i in range(len(self.vertices))}      # Dictionary with variables
+            else:
+                x = {order[i]:t[i] for i in range(len(self.vertices))}
 
-        # Create a list with generators for the ideal
-        ideal_gens = []
-        for v in self.vertices:         # Toppling polynomials
-            poly = - x[v]**(self.sandpile_struct.out_degree(v)) + R.prod([x[e[1]] for e in self.sandpile_struct.edges(v, labels = False) if e[1] in self.vertices])
-            ideal_gens.append(poly)
-        if sorted:                      # Permutation group relations
-            for subgr in self.perm_group:
-                # Create permutation matrix
-                A = matrix(R, [[x[v] - x[w] for w in subgr] for v in subgr])     #type: ignore
-                poly = A.det()
+            # Create a list with generators for the ideal
+            ideal_gens = []
+            for v in self.vertices:         # Toppling polynomials
+                poly = - x[v]**(self.sandpile_struct.out_degree(v)) + R.prod([x[e[1]] for e in self.sandpile_struct.edges(v, labels = False) if e[1] in self.vertices])
                 ideal_gens.append(poly)
-        I = R.ideal(ideal_gens)         # Define the ideal
+            I = R.ideal(ideal_gens)         # Define the ideal
 
-        # Define the quotient ring
-        S = R.quotient(I)
+            return (R, I)
+        else:                                                   ## Homogeneous
+            # Define the multivariate polynomial ring
+            R = PolynomialRing(coeff_ring, ['x%s'%v for v in range(len(self.vertices)+1)])    #type: ignore
+            t = R.gens()
+            if order == []:
+                order = self.vertices + [self.sink()]
+            x = {order[i]:t[i] for i in range(len(self.vertices)+1)}
 
-        return [S, (R, I)]
+            # Create a list with generators for the ideal
+            ideal_gens = [x[self.sink()]-1]
+            for v in self.vertices:         # Toppling polynomials
+                poly = - x[v]**(self.sandpile_struct.out_degree(v)) + R.prod([x[e[1]] for e in self.sandpile_struct.edges(v, labels = False)])
+                ideal_gens.append(poly)
+            I = R.ideal(ideal_gens)         # Define the ideal
+
+            return (R, I)
+
+
+    def symm_poly(self, coeff_ring, config, order = []):                           ## Given a configuration, this function returns the symmetrized
+        r"""
+            This function computes the polynomial symmetric with respect to perm_group associated to the configuration config.
+        """
+        (R,I) = self.associated_ring(coeff_ring, order = order)    # Define the ring
+        t = R.gens()
+        if order == []:
+            order = self.vertices
+        x = {order[i]:t[i] for i in range(len(self.vertices))}
+
+        poly = R.prod([x[v]**config[v] for v in self.vertices])
+        Sn = SymmetricGroup(range(len(order)))      #type:ignore
+        for subgr in self.perm_group:
+            new_poly = 0
+            indexes = [i for i in range(len(order)) if order[i] in subgr]
+            for sigma in Permutations(indexes):     #type: ignore
+                ext_dict = {v:v for v in order if v not in subgr} | {subgr[i]:order[sigma[i]] for i in range(len(indexes))}
+                ext_perm = [ext_dict[v] for v in order]
+                ext_sigma = Sn([ext_perm.index(v) for v in order])   #type: ignore
+                new_poly = new_poly + poly(*ext_sigma(t))
+            poly = new_poly
+        return poly
     
 
-    def sortrec_ideal(self, coeff_ring, sorted = True, opt = 2, override = False):     ## Compute the sorted recurrent ideal
+    def sortrec_ideal(self, coeff_ring, sorted = True, opt = 2, override = False, order = [], homog = False):     ## Compute the sorted recurrent ideal
         r"""
             Compute the ideal to sorted recurrents. The possible arguments are:
                 - coeff_ring    : specify the coefficient ring for the polynomial ring.
                 - sorted        : boolean, it indicates if the considered sandpile is sorted (optional, default is True).
                 - opt           : option for computing sorted recurrents (optional).
                 - override      : boolean, if true the sorted recurrents are computed even if sorted_rec is non-empty (optional, default is False)
+                - order         : the vertex order associated to variables x0, ..., xn (optional).
+                - homog         : asks whether to construct the homogeneous ideal or not (optional, default is False).
 
             The function returns a list with the quotient ring, the polynomial ring and the ideal.
         """
-        if self.sorted_rec == [] or override:                       # Computes the sorted recurrents if necessary
-            self.sorted_recurrents(option = opt)
+        if not homog:
+            if self.sorted_rec == [] or override:                       # Computes the sorted recurrents if necessary
+                self.sorted_recurrents(option = opt)
 
-        S,(R,I) = self.associated_ring(coeff_ring, sorted=sorted)     # Construct the associated ring
-        t = R.gens()
-        tbar = S.gens()
-        x = {self.vertices[i]:t[i] for i in range(len(self.vertices))}      # Dictionary with variables
-        xbar = {self.vertices[i]:tbar[i] for i in range(len(self.vertices))}      # Dictionary with variables
-        
-        ideal_gens = []                                             # Compute ideal generators for R
-        for conf in self.sorted_rec:
-            poly = R.prod([x[v]**conf[v] for v in self.vertices])
-            ideal_gens.append(poly)
-        J = R.ideal(ideal_gens)
-        ideal_gens = []                                             # Compute ideal generators for S
-        for conf in self.sorted_rec:
-            poly = S.prod([xbar[v]**conf[v] for v in self.vertices])
-            ideal_gens.append(poly)
-        Jbar = S.ideal(ideal_gens)
+            (R,I) = self.associated_ring(coeff_ring, sorted=sorted, order=order)     # Construct the associated ring
+            t = R.gens()
+            if order == []:
+                order = self.vertices
+            x = {order[i]:t[i] for i in range(len(self.vertices))}
+            
+            ideal_gens = []                                             # Compute ideal generators for R
+            for conf in self.sorted_rec:
+                if sorted:
+                    poly = self.symm_poly(coeff_ring, conf, order=order)
+                else:
+                    poly = R.prod([x[v]**conf[v] for v in self.vertices])
+                ideal_gens.append(poly)
+            J = R.ideal(ideal_gens)
 
-        return [(S,Jbar),(R,I,J)]
+            return (R,I,J)
+        else:
+            if self.sorted_rec == [] or override:                       # Computes the sorted recurrents if necessary
+                self.sorted_recurrents(option = opt)
 
+            (R,I) = self.associated_ring(coeff_ring, sorted=sorted, order=order, homog=True)     # Construct the associated ring
+            t = R.gens()
+            if order == []:
+                order = self.vertices + [self.sink()]
+            x = {order[i]:t[i] for i in range(len(self.vertices)+1)}
+
+            ideal_gens = []                                             # Compute ideal generators for R
+            for conf in self.sorted_rec:
+                if sorted:
+                    poly = self.symm_poly(coeff_ring, conf, order=[v for v in order if v != self.sink()])
+                else:
+                    poly = R.prod([x[v]**conf[v] for v in self.vertices])
+                ideal_gens.append(poly)
+            J = R.ideal(ideal_gens)
+
+            return (R,I,J)
+    
     
     def show(self):                                     ## Function that displays the Sorted Sandpile
         r"""
