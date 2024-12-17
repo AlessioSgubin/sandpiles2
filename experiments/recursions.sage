@@ -1,6 +1,8 @@
 #
 # Auxiliary functions                       ####################################
 #
+from sage.combinat.q_analogues import q_multinomial
+
 def kDyckPaths(n,k):                    # kDYCKPATHS: computes the set of all (nk,n)-Dyck paths
     possible_paths = [[1]]
     for i in range(n*(k+1)-1):
@@ -41,12 +43,20 @@ def pdinv(n,k,w):                       # PDINV: computes the path dinv of a giv
                 dinv += 1
     return dinv
 
-def diag_touch(n,k,path):               # DIAG_TOUCH: computes the times the path touches the diagonal
+def diag_touch(n,k,path,m=0):               # DIAG_TOUCH: computes the times the path touches the diagonal (= modulo m)
     touch = 0
     for i in range(n):  # in each row check area...
-        if path[i] == (n-i)*k:
+        if path[i] == (n-i)*k+m:
             touch += 1
     return touch
+
+def gen_poly(n,k,set_paths,ring):
+    q = ring.gens()[0]
+    t = ring.gens()[1]
+    poly = 0*q*t
+    for path in set_paths:
+        poly = poly + (q**pdinv(n,k,path))*(t**area(n,k,path))
+    return poly
 
 
 #
@@ -106,14 +116,24 @@ for h in range(n):              # See if we get a relation between En,k and subs
 #
 # Try to see if we get a hint on the actual recursion?
 #
-n = 5
+n = 6
 k = 2
-h = 2
+h0 = 2
+h1 = 1
 # All (nk,n)-Dyck paths
-dyck_nk = kDyckPaths(n,k)
-# All ((n-h)k,n-h)-Dyck paths
-dyck_nkminh = kDyckPaths(n-h,k)
-# All (nk,n)-Dyck paths with h touches
-dyck_nk_htouch = [path for path in dyck_nk if diag_touch(n,k,path) == h]
+dyck1 = kDyckPaths(n,k)
+dyck1_touch = [path for path in dyck1 if diag_touch(n,k,path) == h0 and diag_touch(n,k,path,1) == h1]
+# Associated poly
+poly = gen_poly(n,k,dyck1_touch,AA)
 
-### To be continued...
+# All ((n-h0)k, n-h0)
+dyck2 = kDyckPaths(n,k)
+poly_rec = 0*q*t
+for h2 in range(n-h0-h1+1):
+    dyck2_touch = [path for path in dyck2 if diag_touch(n,k,path) == h0+h1 and diag_touch(n,k,path,1) == h2]
+    poly_rec = poly_rec + q**(n-h0) * t**(binomial(h0,2)) * q_multinomial([h0-1,h1,h2], q=t) * gen_poly(n,k,dyck2_touch,AA)
+
+print(poly(t=1))
+print(poly(q=1))
+print(poly_rec(t=1))
+print(poly_rec(q=1))

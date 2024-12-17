@@ -8,6 +8,15 @@ import numpy as np
                     #                Auxiliary Functions                #
                     #####################################################
 
+def is_symmetric(poly):         # Check if polynomial is symmetric in q and t
+    R = FractionField(QQ['q','t','x'])  # type: ignore
+    q,t,x = R.gens()
+    poly1 = R(poly)     # Casting in new ring
+    poly2 = poly1
+    poly2(q=x)
+    poly2(t=q)
+    poly2(x=t)
+    return (poly == poly2)
 
 def is_increasing_list(lst):
     r"""
@@ -200,6 +209,20 @@ class SandpileSortConfig():
         return self.sandpile_config
     
 
+    def single_topple(self, vert, threshold = 0, sorting = True):                  ## Toppling sending one grain for each arc
+        r"""
+            Topple a vertex by sending a grain to each edge.
+        """
+        neigh = self.sandpile_struct.edges(vert)
+        for v in neigh:
+            if (v[1] != self.sink) and (v[2] > threshold):
+                self.sandpile_config[v[1]] += 1
+                self.sandpile_config[vert] -= 1
+        if sorting:
+            self.sort()
+        return self.sandpile_config
+
+
     def __invert__(self, sorting = True):                           ## Topplings until stable
         r"""
             Modifies the Sorted Configuration to get the stable configuration.
@@ -212,15 +235,15 @@ class SandpileSortConfig():
         return self.sandpile_config
 
 
-    def level(self):                                ## Returns the level statistic of the configuration
+    def level(self):                                                ## Returns the level statistic of the configuration
         r"""
             Returns the level of the configuration.
         """
-        not_inc_sink = len(self.sandpile_struct.to_undirected().edges()) - self.sandpile_struct.out_degree(self.sink)
+        not_inc_sink = sum([v[2] for v in self.sandpile_struct.to_undirected().edges()]) - self.sandpile_struct.out_degree(self.sink)
         return (- not_inc_sink + self.sandpile_config.deg())
     
 
-    def delay(self, order = [], check_rec = True):  ## Returns the delay statistic of the configuration
+    def delay(self, order = [], check_rec = True):                  ## Returns the delay statistic of the configuration
         r"""
             Given a reading order of nonsink vertices, this function computes the configuration's delay.
 
@@ -257,7 +280,50 @@ class SandpileSortConfig():
         return delay
     
 
-    def show(self, sink = True, colors = False, heights = False, directed = False):                                 ## Returns a drawing of the configuration
+    def k_delay(self, k, order = [], check_rec = True):             ## Returns the NEW delay statistic of the configuration
+        r"""
+            Given a reading order of nonsink vertices, this function computes the configuration's new conjectured delay.
+            - k             : the multeplicity of all edges (except incident to the sink).
+            - order         : the order for reading vertices. If undefined, the decreasing order on vertices is assumed.
+            - check_rec     : this option can be used to override the is_recurrent() call.
+        """
+        if (not self.is_recurrent()) and check_rec:           # Check if the configuration is recurrent
+            print(self.sandpile_config)
+            print(self.sandpile_config.is_recurrent())
+            self.sandpile_struct.show()
+            raise Exception("The sorted configuration is not recurrent, hence delay is not defined.")
+
+        nonsink_vert = self.vertices
+        n = len(nonsink_vert)
+
+        if order == []:                                     # No order has been assigned: take decreasing order
+            order = copy.copy(nonsink_vert)
+            order.sort()
+            order.reverse()
+
+        toppl = [0 for i in range(n)]                                               # Stores information on how many partial topplings are still needed
+        finalv = [k for i in range(n)]            # We exit the loop when toppl == finalv
+        delay = 0
+        plus = 0
+        self.topple_sink(sorting = False)                               # Start by toppling the sink
+        while toppl != finalv:                               # Until everything has been toppled k times...
+            for i in range(len(order)):
+                if (self.sandpile_struct.out_degree(order[i]) <= self.sandpile_config[order[i]]) and (toppl[i] == 0):
+                                                                        # Can be toppled for the first time!
+                    self.single_topple(order[i], threshold = toppl[i], sorting = False)
+                    toppl[i] += 1
+                    delay += plus
+                else:
+                    if toppl[i] < finalv[i] and toppl[i] > 0:                   # Topple later time...
+                        self.single_topple(order[i], threshold = toppl[i], sorting = False)
+                        toppl[i] += 1
+            plus += 1
+        #print("The configuration {} has k-delay {}".format(self.sandpile_config, delay))
+        self.sort()
+        return delay
+
+
+    def show(self, sink = True, colors = False, heights = False, directed = False):     ## Returns a drawing of the configuration
         r"""
             Returns a drawing of the sorted sandpile configuration.
         """
@@ -335,7 +401,7 @@ class SortedSandpile():
         return self.sandpile_struct.reduced_laplacian()
 
 
-    def simple_recurrents(self, verbose = True):                        ## Computes the simple recurrents
+    def simple_recurrents(self, verbose = True):                            ## Computes the simple recurrents
         r"""
             Returns the list of recurrent configurations ignoring the action of perm_group.
 
@@ -344,7 +410,7 @@ class SortedSandpile():
         return self.sandpile_struct.recurrents(verbose = verbose)
     
 
-    def sorted_recurrents(self, option = 0):            ## Computes a list of all sorted recurrent configurations
+    def sorted_recurrents(self, option = 0):                                ## Computes a list of all sorted recurrent configurations
         r"""
             Computes the sorted recurrent configurations.
 
@@ -415,7 +481,7 @@ class SortedSandpile():
             raise Exception("The given option is not valid.")
     
 
-    def q_Polynomial(self, opt = 2, override = False):      ## Computes the q,t polynomial on (level, delay)
+    def q_Polynomial(self, opt = 2, override = False):                      ## Computes the q,t polynomial on (level, delay)
         r"""
             Returns the q - polynomial corresponding to the sorted sandpile's recurrent configurations.
 
@@ -438,7 +504,7 @@ class SortedSandpile():
         return poly
 
 
-    def qt_Polynomial(self, ordered = [], opt = 2, override = False):     ## Computes the q,t polynomial on (level, delay)
+    def qt_Polynomial(self, ordered = [], opt = 2, override = False):       ## Computes the q,t polynomial on (level, delay)
         r"""
             Returns the q,t - polynomial corresponding to the sorted sandpile's recurrent configurations.
 
@@ -461,17 +527,26 @@ class SortedSandpile():
             elif self.specific_opt[0] == "gen-clique-indep" or self.specific_opt[0] == "mulgen-clique-indep":
                 ordered = self.specific_opt[3]
             
-                
-        for config in self.sorted_rec:      # Compute the polynomial
-            sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group, sort = False, verts = self.vertices)
-            q_exp = sortedconfig.level()
-            t_exp = sortedconfig.delay(order = ordered, check_rec=False)
-            #print("Configurazione {} con livello {} e delay {}".format(sortedconfig.sandpile_config, q_exp, t_exp))
-            poly = poly + (q**q_exp) * (t**t_exp)
+        if self.specific_opt[0] == "mul-clique-indep":              # Compute the polynomial with k_delay
+            k_mul = self.specific_opt[3]
+            for config in self.sorted_rec:
+                sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group, sort = False, verts = self.vertices)
+                q_exp = sortedconfig.level()
+                t_exp = sortedconfig.k_delay(order = ordered, k=k_mul, check_rec=False)
+                #print("Configurazione {} con livello {} e delay {}".format(sortedconfig.sandpile_config, q_exp, t_exp))
+                poly = poly + (q**q_exp) * (t**t_exp)
+        else:                                                       # Compute the polynomial with regular delay
+            for config in self.sorted_rec:
+                sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group, sort = False, verts = self.vertices)
+                q_exp = sortedconfig.level()
+                t_exp = sortedconfig.delay(order = ordered, check_rec=False)
+                #print("Configurazione {} con livello {} e delay {}".format(sortedconfig.sandpile_config, q_exp, t_exp))
+                poly = poly + (q**q_exp) * (t**t_exp)
+        
         return poly
     
 
-    def associated_ring(self, coeff_ring, order = [], homog = False):   ## Compute the associated ring
+    def associated_ring(self, coeff_ring, order = [], homog = False):       ## Compute the associated ring
         r"""
             Compute the ring associated to the sorted sandpile. The possible arguments are:
                 - coeff_ring    : specify the coefficient ring for the polynomial ring.
@@ -515,7 +590,7 @@ class SortedSandpile():
             return (R, I)
 
 
-    def symm_poly(self, coeff_ring, config, order = []):                           ## Given a configuration, this function returns the symmetrized
+    def symm_poly(self, coeff_ring, config, order = []):                    ## Given a configuration, this function returns the symmetrized
         r"""
             This function computes the polynomial symmetric with respect to perm_group associated to the configuration config.
         """
@@ -593,7 +668,7 @@ class SortedSandpile():
             return (R,I,J)
     
     
-    def show(self, default = False):                                     ## Function that displays the Sorted Sandpile
+    def show(self, default = False):                                        ## Function that displays the Sorted Sandpile
         r"""
             This function plots the sorted sandpile. The possible arguments are:
             - basic = False : if True, the representation is the same as Sandpile.show().
@@ -660,7 +735,7 @@ class SortedSandpile():
             self.specific_opt[1].show(vertex_colors = col, vertex_labels=self.specific_opt[2], edge_labels=True)
     
 
-    def export(self, saveopt = 0, opt = 2):               ## Export informations for the Sorted Sandpile
+    def export(self, saveopt = 0, opt = 2):                 ## Export informations for the Sorted Sandpile
         r"""
             This function returns the critical information of the sorted sandpile in a format that can be saved using pickle.
             If saveopt = 0, the function returns a list with:
@@ -679,7 +754,7 @@ class SortedSandpile():
         return [saveopt, self.sandpile_struct.dict(), self.sandpile_struct.sink(), self.perm_group, self.specific_opt, key_list, conflist, qt_poly]
 
 
-    def save(self, namefile, saveopt = 0, opt = 2):       ## Save the information on a file
+    def save(self, namefile, saveopt = 0, opt = 2):         ## Save the information on a file
         r"""
             This function saves the critical information of the sorted sandpile in a namefile
         """
@@ -689,7 +764,7 @@ class SortedSandpile():
             pickle.dump(info, handle)
     
 
-    def load(namefile):                                 ## Load the information for a Sandpile
+    def load(namefile):                                     ## Load the information for a Sandpile
         r"""
             This function reads a file and returns a sorted sandpile with the information.
         """
@@ -713,7 +788,7 @@ class SortedSandpile():
                     ########################################################
 
 
-def CliqueIndependent_SortedSandpile(mu, nu):           ## Specific type of Sandpile
+def CliqueIndependent_SortedSandpile(mu, nu):               ## Specific type of Sandpile
     r"""
         Construction of a Sorted Sandpile on the clique-independent graph given by parameters:
             - mu    : partition associated to the number and size of cliques in the graph.
@@ -836,8 +911,10 @@ def Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1):
 
     part_first = 1                                      # Keeps track of first vertex of current part
     for part_nu in nu:                                          # Add edges for independent vertices. For each part...
-        for i in range(part_nu):                                        # ...for each vertex in the part...
-            d[part_first + i] = [0] + [vert for vert in range(mu_num + nu_num + 1) for mult in range(hmul) if ((0 < vert) and (vert < part_first)) or (vert >= part_first + part_nu)]
+        for i in range(part_nu):
+            indep = [vert for vert in range(mu_num + nu_num + 1) for mult in range(kmul-1) if (part_first <= vert) and (vert < part_first + part_nu) and (vert != part_first + i)]
+            others = [vert for vert in range(mu_num + nu_num + 1) for mult in range(hmul) if ((0 < vert) and (vert < part_first)) or (vert >= part_first + part_nu)]
+            d[part_first + i] = [0] + indep + others
                                                                         # ...add all edges except for other vertices in part_nu    
         perm_group.append([part_first+j for j in range(part_nu)])       # Add the permutation orbit for the nu_part
         part_first += part_nu
@@ -859,7 +936,6 @@ def Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1):
     for j in range(len(nu)):
         temp = copy.copy(perm_group[len(nu)-j-1])
         temp.sort()
-        temp.reverse()
         ordered = ordered + temp
     
     G = Graph(d)            # type: ignore      # Define the clique-independent graph
