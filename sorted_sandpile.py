@@ -209,7 +209,7 @@ class SandpileSortConfig():
         return self.sandpile_config
     
 
-    def single_topple(self, vert, threshold = 0, sorting = True):                  ## Toppling sending one grain for each arc
+    def single_topple(self, vert, threshold = 0, sorting = True):   ## Toppling sending one grain for each arc
         r"""
             Topple a vertex by sending a grain to each edge.
         """
@@ -788,7 +788,7 @@ class SortedSandpile():
                     ########################################################
 
 
-def CliqueIndependent_SortedSandpile(mu, nu):               ## Specific type of Sandpile
+def CliqueIndependent_SortedSandpile(mu, nu):                                                                                           ## Specific type of Sandpile
     r"""
         Construction of a Sorted Sandpile on the clique-independent graph given by parameters:
             - mu    : partition associated to the number and size of cliques in the graph.
@@ -836,7 +836,7 @@ def CliqueIndependent_SortedSandpile(mu, nu):               ## Specific type of 
     return S
 
 
-def General_CliqueIndependent_SortedSandpile(cells_graph, card_cell, order_cells = []):
+def General_CliqueIndependent_SortedSandpile(cells_graph, card_cell, order_cells = []):                                                 ## Specific type of Sandpile
     r"""
         Construction of a Sorted Sandpile on the generalized clique-independent graph. Arguments are a graph and a dictionary with values for vertices, such that:
             - nodes:    represents a clique or an independent component with |card_cell[node]| vertices.
@@ -897,7 +897,7 @@ def General_CliqueIndependent_SortedSandpile(cells_graph, card_cell, order_cells
     return S
 
 
-def Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1):
+def Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1):                                                                    ## Specific type of Sandpile
     r"""
         Construction of the Sorted Sandpile, given two partitions mu, nu, where edges have multeplicity k in each clique and multeplicity h between components.
     """
@@ -949,7 +949,7 @@ def Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1):
     return S
 
 
-def MultiGeneral_CliqueIndependent_SortedSandpile(cells_graph, card_cell, multi_sink = 1, multiedge_cell = {}, order_cells = []):
+def MultiGeneral_CliqueIndependent_SortedSandpile(cells_graph, card_cell, multi_sink = 1, multiedge_cell = {}, order_cells = []):       ## Specific type of Sandpile
     r"""
         Construction of a Sorted Sandpile on the generalized clique-independent graph. Arguments are a graph and a dictionary with values for vertices, such that:
             - nodes:    represents a clique or an independent component with |card_cell[node]| vertices.

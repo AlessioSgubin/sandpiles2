@@ -8,15 +8,16 @@ def is_symmetric(poly):         # Check if polynomial is symmetric in q and t
     q,t,x = R.gens()
     poly1 = R(poly)     # Casting in new ring
     poly2 = poly1
-    poly2(q=x)
-    poly2(t=q)
-    poly2(x=t)
-    return (poly == poly2)
+    poly2 = poly2(q=x)
+    poly2 = poly2(t=q)
+    poly2 = poly2(x=t)
+    return poly1 == poly2
 
-mu = [2]
-nu = [2,2]
+mu = [3,2]
+nu = []
 n = sum(mu) + sum(nu)
 k = 2
+hmul = 0
 
 #
 #   Compute E_n,k                         ####################################
@@ -31,6 +32,7 @@ u = AA.gens()[2]
 SymAA = SymmetricFunctions(AA)
 SymAA.inject_shorthands(verbose=False)
 H = SymAA.macdonald().Ht()
+Q = SymAA.macdonald().Q()
 e = SymAA.e()
 
 def C_alpha(alpha, f=SymAA.schur()[0]):         # Zabrocki's operator C_\alpha.
@@ -61,3 +63,13 @@ S = Multi_CliqueIndependent_SortedSandpile(mu,nu,k)
 poly_sandpile = S.qt_Polynomial(opt=2)
 
 print("Are the polynomials equal? {}".format(poly_symmetric == poly_sandpile))
+
+#
+#   Consider a different sandpile
+#
+
+#T = Multi_CliqueIndependent_SortedSandpile(mu,nu,k,hmul)
+
+#poly_sandpile2 = T.qt_Polynomial(opt=2)
+
+#print("Is the polynomial symmetric? {}".format(is_symmetric(poly_sandpile2)))
