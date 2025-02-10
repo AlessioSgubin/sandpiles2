@@ -4,12 +4,7 @@
 import copy
 import sys
 
-TRY1 = False
-TRY2 = False
-TRY3 = False
-#TRY1 = True
-#TRY2 = True
-TRY3 = True
+TRY = 6
 
 def kDyckPaths(n,k):                        # kDYCKPATHS: computes the set of all (nk,n)-Dyck paths
     possible_paths = [[1]]
@@ -178,7 +173,7 @@ def delay(n,k,w_path,w_label,contr=False):              # DELAY: computes the de
         # writing down the new letter in reading word
         reading_word = reading_word + [current]
     if contr:
-        return [delay,contributes]
+        return [delay,contributes,reading_word]
     else:
         return delay
 
@@ -196,7 +191,7 @@ def path_word(n,k,w_path,w_label):
     path_word = [w_label[path_order[i]] for i in range(n)]
     return path_word
 
-def Psi(n,k,w_path,w_label, infos = False):                # PSI: this is the bijection
+def Psi(n,k,w_path,w_label,infos = False):                # PSI: this is the bijection
     # This function tests the bijection between (dinv,area) -> (area,delay)
 
     ### Create the path word, ordered by rank
@@ -270,7 +265,6 @@ def sweep_map(n,k,w_path):
     for i in range(n-1):
         steps = steps + ['E' for j in range(w_path[i]-w_path[i+1])] + ['N']
     steps = steps + ['E' for j in range(w_path[n-1]+1)]
-    #print(steps)
     # Write the rank of each "wand"
     rank_steps = [0]
     current = 0
@@ -282,10 +276,7 @@ def sweep_map(n,k,w_path):
         rank_steps = rank_steps + [current]
     # Write down sequence of steps reordered by rank
     new_order = sorted(range(len(rank_steps)), key=lambda i: rank_steps[i])
-    #print(new_order)
     sweep_steps = [steps[i] for i in new_order]
-    #print(rank_steps)
-    #print(sweep_steps)
     # Compute new w_path
     w_sweep_path = []
     current = n*k
@@ -295,6 +286,70 @@ def sweep_map(n,k,w_path):
         else:
             current -= 1
     return w_sweep_path
+
+def inverse_sweep_map(n,k,w_path):
+    M = n*k+1
+    N = n
+    # Write down the sequence of north (N)/east (E) steps
+    steps = ['N']
+    for i in range(n-1):
+        steps = steps + ['E' for j in range(w_path[i]-w_path[i+1])] + ['N']
+    steps = steps + ['E' for j in range(w_path[n-1]+1)]
+    # Write down the arrows in the grid with starting/ending heights
+    grid = []
+    min_rank = 0
+    for st in steps:
+        if st == 'N':
+            point_arr = min_rank + M
+            grid.append([min_rank,point_arr])
+            min_rank += 1
+        else:
+            if min_rank - N < 0:
+                min_rank = N
+            point_arr = min_rank - N
+            grid.append([min_rank,point_arr])
+            min_rank += 1
+    # Move all the arrows according to the algorithm
+    num_rows = max([max(a,b) for [a,b] in grid]) + 1
+    row_counts = [sum([sign(b-a) for [a,b] in grid if min([a,b]) <= i < max([a,b])]) for i in range(num_rows)]
+    while row_counts != [0 for i in range(num_rows)]:
+        #print(row_counts)
+        #print(grid)
+        lev = min([i for i in range(num_rows) if row_counts[i] > 0])
+        moved_arr = min([i for i in range(len(grid)) if grid[i][0] == lev])
+        to_shift = moved_arr
+        to_lev = lev
+        while to_shift < len(grid):
+            if grid[to_shift][0] == to_lev:
+                grid[to_shift][0] += 1
+                grid[to_shift][1] += 1
+                to_shift += 1
+                to_lev += 1
+            else:
+                to_shift = len(grid)
+        num_rows = max([max(a,b) for [a,b] in grid]) + 1
+        row_counts = [sum([sign(b-a) for [a,b] in grid if min([a,b]) <= i < max([a,b])]) for i in range(num_rows)]
+    # Reorder the path
+    new_path = []
+    rank = min([min([a,b]) for [a,b] in grid])
+    #print("Finished: {}".format(grid))
+    while grid != []:
+        ind = min([i for i in range(len(grid)) if grid[i][0] == rank])
+        step = grid[ind]
+        rank = step[1]
+        new_path.append(step)
+        grid.remove(step)
+    # Compute new w_path
+    sweep_steps = [sign(b - a) for [a,b] in new_path]
+    w_sweep_path = []
+    current = n*k
+    for w in sweep_steps:
+        if w == 1:
+            w_sweep_path = w_sweep_path + [current]
+        else:
+            current -= 1
+    return w_sweep_path
+
 
 def area_word(n,k,w_path):
     return [w_path[i] - (n-i)*k for i in range(n)]
@@ -310,7 +365,34 @@ def tdinv_word(n,k,w_path,w_label,path_word = []):
     ### Compute the not_tdinv
     # Compute all pairs of cars making tdinv
     tdinv_pairs = []            
-    row_cresc = sorted(range(n), key=lambda i: w_label[i])
+    row_cresc = [w_label.index(h+1) for h in range(n)]
+    for i in range(n):
+        rank_c = n*w_path[row_cresc[i]] + (n*k+1)*row_cresc[i]
+        for j in range(n-i-1):
+            rank_d = n*w_path[row_cresc[i+j+1]] + (n*k+1)*row_cresc[i+j+1]
+            if rank_c < rank_d and rank_d < rank_c + (n*k+1):
+                tdinv_pairs = tdinv_pairs + [(i+1,i+j+2)]
+
+    # Compute tdinv with previous cars
+    tdinv = []
+    for i in range(n):
+        temp = 0
+        for j in range(i):
+            if ((path_word[i],path_word[j]) in tdinv_pairs) or ((path_word[j],path_word[i]) in tdinv_pairs):
+                temp += 1
+        tdinv = tdinv + [temp]
+    return tdinv
+
+def not_tdinv_word(n,k,w_path,w_label,path_word = []):
+    ### Create the path word, ordered by rank
+    rank_list = [(n*k+1)*i + n*w_path[i] for i in range(n)]
+    path_order = sorted(range(len(rank_list)), key=lambda k: rank_list[k])      # Reading order of the columns
+    path_word = [w_label[path_order[i]] for i in range(n)]                      # Labels in order
+    
+    ### Compute the not_tdinv
+    # Compute all pairs of cars making tdinv
+    tdinv_pairs = []            
+    row_cresc = [w_label.index(h+1) for h in range(n)]
     for i in range(n):
         rank_c = n*w_path[row_cresc[i]] + (n*k+1)*row_cresc[i]
         for j in range(n-i-1):
@@ -318,15 +400,22 @@ def tdinv_word(n,k,w_path,w_label,path_word = []):
             if rank_c < rank_d and rank_d < rank_c + (n*k+1):
                 tdinv_pairs = tdinv_pairs + [(i+1,i+j+2)]
     # Compute not_tdinv with previous cars
-    tdinv = []
-    labels = path_word
+    not_tdinv = []
     for i in range(n):
         temp = 0
         for j in range(i):
-            if ((labels[i],labels[j]) in tdinv_pairs) or ((labels[j],labels[i]) in tdinv_pairs):
+            if ((path_word[i],path_word[j]) not in tdinv_pairs) and ((path_word[j],path_word[i]) not in tdinv_pairs):
                 temp += 1
-        tdinv = tdinv + [temp]
-    return tdinv
+        not_tdinv = not_tdinv + [temp]
+    return not_tdinv
+
+def max_tdinv_label(n,k,w_path):
+    # Compute w_label for maximum tdinv
+    rank_list = [(n*k+1)*i + n*w_path[i] for i in range(n)]
+    order = sorted(range(len(rank_list)), key=lambda k: rank_list[k])
+    park = sorted(range(len(order)), key=lambda k: order[k])
+    w_label_max = [i+1 for i in park]
+    return w_label_max
 
 def max_tdinv_word(n,k,w_path):
     # Compute w_label for maximum tdinv
@@ -336,6 +425,39 @@ def max_tdinv_word(n,k,w_path):
     w_label_max = [i+1 for i in park]
     tdinv = tdinv_word(n,k,w_path,w_label_max)
     return tdinv
+
+def not_pdinv_word(n,k,w_path):
+    rank_list = [(n*k+1)*i + n*w_path[i] for i in range(n)]
+    path_word = sorted(range(len(rank_list)), key=lambda k: rank_list[k])
+    not_dinv_word = []
+    # Computing the correlation E steps and N steps via diagonal shadows
+    bijection_E_steps = []      # Stores the corresponding N step to each E step
+    for i in range(n*k):
+        height_E = max([j+1 for j in range(n) if n*k-w_path[j] <= i])
+        corresp = max([j for j in range(height_E) if ((i - n*k + w_path[j]) >= k*(height_E - j - 1)) and ((i - n*k + w_path[j]) < k*(height_E - j - 1) + k)])
+        bijection_E_steps.append(corresp + 1)
+    #print(w_path)
+    #print(bijection_E_steps)
+    
+    # Read all cells above path, searching for pdinv pairs
+    pdinv_pairs = []
+    for i in range(n):                  # Loop on rows
+        for j in range(n*k-w_path[i]):       # Loop on columns
+            arm = (n*k - w_path[i]) - (j+1)
+            leg = i - max([h for h in range(n) if n*k-w_path[h]-1 < j]) - 1
+            if (arm <= k*(leg+1)) and (k*leg < arm + 1):
+                pdinv_pairs.append((bijection_E_steps[j],i+1))
+    #print(pdinv_pairs)
+
+    # Construct the pdinv_word using the reading order
+    not_pdinv = []
+    for i in range(n):
+        temp = 0
+        for j in range(i):
+            temp += k - len([1 for (a,b) in pdinv_pairs if (a,b)==(path_word[i]+1,path_word[j]+1) or (a,b)==(path_word[j]+1,path_word[i]+1)])
+        not_pdinv.append(temp)
+    return not_pdinv
+
 
 def dinvcorr_word(n,k,w_path,w_label,path_word = []):
     ### Create the path word, ordered by rank
@@ -404,62 +526,84 @@ def w_reading(n,k,w_path,w_label):
     path_word = [w_label[path_order[i]] for i in range(n)]
     return path_word
 
-def Phi_bruteforce(n,k,w_path,w_label):
-    # Compute the not_dinv associated to labels
-    order = sorted(range(n), key=lambda i: w_label[i])
-    not_dinv_labels = [n*k - w_path[i] for i in order]
 
-    # Get the delay word, that will correspond to the area
-    val_delay,w_area = delay(n,k,w_path,w_label,contr=True)
-
-    # Gather labels by area...
-    labels_by_area = []
-    for i in range(n*(k-1)+1):
-        labels_by_area = labels_by_area + [ [w_area[j][0] for j in range(n) if w_area[j][1] == i] ]
-    
-    # List areas by label
-    order = sorted(range(n),key=lambda i: w_area[i][0])
-    area_by_label = [w_area[i][1] for i in order]
-    
-    # Try possibilities...
-    partial_readings = [[]]
-    for ar in range(n*(k-1)+1):
-        adding = labels_by_area[ar]
-        if adding != []:            # Try possible configurations
-            new_possibilities = []
-            for pos in Subsets(range(len(partial_readings[0])+len(adding)),len(adding)):
-                positions = pos.list()
-                for adding_order in Permutations(adding).list():
-                    try_readings = copy.copy(partial_readings)
-                    for temp in try_readings:
-                        try_read = copy.copy(temp)
-                        for j in range(len(adding)):            # Shuffle the labels
-                            try_read.insert(positions[j],adding_order[j])
-                        # Test if it is right
-                        n2 = len(try_read)
-                        path2 = [n2*(k-i) + area_by_label[try_read[i]-1] for i in range(n2)]
-                        not_tdinv2 = tdinv_word(n2,k,path2,try_read)
-                        not_dinvcorr2 = dinvcorr_word(n2,k,path2)
-                        not_dinv2 = [not_tdinv2[i]+not_dinvcorr2[i] for i in range(n2)]
-                        not_dinv = [not_dinv_labels[i-1] for i in try_read]
-                        if not_dinv == not_dinv2:
-                            new_possibilities = new_possibilities + [try_read]
-            if len(new_possibilities) >= 1:
-                partial_readings = new_possibilities
+def w_delay_by_contributes(n,k,contrib):
+    # contrib = [area_label_1, area_label_2, ...]
+    rounds = max(contrib) + k
+    word = []
+    buffer = []
+    for n_loop in range(rounds):
+        current = len(contrib)
+        new_labels = [j for j in range(len(contrib)) if contrib[j] == n_loop for l in range(k)]
+        buffer = buffer + new_labels
+        if buffer == []:
+            check = False
+        else:
+            check = (current > min(buffer))
+        while check:
+            temp = max([j for j in buffer if j < current])
+            buffer.remove(temp)
+            word = word + [temp]
+            current = temp
+            if buffer == []:
+                check = False
             else:
-                print("There are {} possibilities:".format(len(new_possibilities)))
-                print("Partial reading: {}".format(partial_readings))
-                print("Possibilities {}".format(new_possibilities))
-                raise Exception("SBAGLIATO!")
-    return partial_readings
+                check = (current > min(buffer))
+    return [w+1 for w in word]
+    
+
+def Phi(n,k,w_path,w_label,infos = False):
+    ### Compute delay and delay_word
+    dela,info_delay,w_delay = delay(n,k,w_path,w_label,contr=True)
+    
+    ### Compute the path of the image
+    path_max_tdinv = []
+    areas = [info_delay[i][1] for i in range(len(info_delay))]
+    areas.sort()
+    w_delay_max = w_delay_by_contributes(n,k,areas)
+    current_label = 0
+    weak_des = [0] + [i+1 for i in range(n*k-1) if w_delay_max[i]<=w_delay_max[i+1]]
+    #print("\nArea {}".format(areas))
+    #print("Delay_max {}".format(w_delay_max))
+    for a in range(max(areas) + 1):
+        num_areas = len([1 for w in areas if w == a])
+        added_labels = [current_label + (num_areas-i) for i in range(num_areas)]
+        for j in range(len(added_labels)):
+            '''
+            if a-1 not in areas:        # No labels with a-1 area
+                path_max_tdinv.append(n*k - w_delay_max.index(added_labels[0]))
+            else:                       # Some labels with a-1 area
+                if added_labels[j] > max(previous_areas):           # label greater than those from previous
+                    path_max_tdinv.append(n*k - w_delay_max.index(max(previous_areas)) - 1)
+                    #path_max_tdinv.append(n*k - len(path_max_tdinv))
+                else:                                               # otherwise
+                    path_max_tdinv.append(n*k - w_delay_max.index(min([u for u in previous_areas if u > added_labels[j]])) - 1)
+            '''
+            first_occ = w_delay_max.index(added_labels[0])          # Position of the first occurrence of added_labels[j]
+            if a > 0:                                           # We are NOT in the first descending run
+                # Compute the first position from which all following labels are less than added_labels[j]
+                lowest_pos = min([ l for l in range(first_occ) if max(w_delay_max[l:first_occ]) < added_labels[j] ]) + 1
+                # Compute the lowest position possible in the previous descending run
+                lowest_last_des = weak_des[a-1] + 1
+                posit = max([lowest_pos,lowest_last_des])
+                path_max_tdinv.append(n*k - posit)
+            else:                                               # We are in the first descending run
+                path_max_tdinv.append(n*k)
+        current_label += num_areas
+    #print("Delay word {} and max_path {}".format(w_delay_max,path_max_tdinv))
+    #print("Path_max_dinv {}".format(path_max_tdinv))
+
+    path_image = inverse_sweep_map(n,k,path_max_tdinv)              # Obtain the image path by inverting the sweep map
+
+    return path_max_tdinv,path_image,w_delay_max
+    
 
 
 ### Now let's test the bijection...
 n = 5
-k = 3
+k = 2
 
-
-if TRY1:
+if TRY == 1:
     for [path1,label1] in nkParkingFunctions(n,k):
         area1 = area(n,k,path1)
         dinv1 = dinv(n,k,path1,label1)
@@ -525,7 +669,7 @@ if TRY1:
         else:
             print("YES!")
 
-if TRY2:
+if TRY == 2:
     nkPF = nkParkingFunctions(n,k)
     nkPF2 = copy.copy(nkPF)
     print("There are {} parking functions".format(len(nkPF)))
@@ -542,7 +686,7 @@ if TRY2:
     else:
         print("The map is NOT bijective!")
 
-if TRY3:
+if TRY == 3:
     nkPF = nkParkingFunctions(n,k)
     for [path1,label1] in nkPF:
         # Compute area word
@@ -550,9 +694,82 @@ if TRY3:
         # Compute path word
         path_word1 = path_word(n,k,path1,label1)
         # Compute dinvcorr word (order: path word)
-        not_dinvcorr_temp = not_dinvcorr_word(n,k,path1,label1)
+        not_dinvcorr1 = not_dinvcorr_word(n,k,path1,label1)
         ordering = [path_word1.index(label1[i]) for i in range(n)]
         not_dinvcorr1 = [not_dinvcorr_temp[i] for i in ordering]
+        # Compute tdinv word
+        not_tdinv1 = not_tdinv_word(n,k,path1,label1)
+        not_tdinv1 = [not_tdinv_temp[i] for i in ordering]
 
-        diff = [i + not_dinvcorr1[i] - area1[i] for i in range(n)]
-        print("Difference word of parking function {} \tis {}".format([path1,label1],diff))
+        diff = [not_dinvcorr1[i] - area1[i] for i in range(n)]
+        diff2 = [i + diff[i] - not_tdinv_temp[i] for i in range(n)]
+        print("Difference word {} \tis {} \t {}".format([path1,label1],diff, diff2))
+
+if TRY == 4:
+    nkPF = nkParkingFunctions(n,k)
+    for [path1,label1] in nkPF:
+        # Compute max_tdinv_label and images, delays
+        label1_max = max_tdinv_label(n,k,path1)
+        [path2,label2, not_tdinv1, not_dinvcorr1] = Psi(n,k,path1,label1,infos=True)
+        not_pdinv1 = not_pdinv_word(n,k,path1)
+        not_pdinv1.sort()
+        [path3,label3] = Psi(n,k,path1,label1_max)
+        del2,contr2,w_delay2 = delay(n,k,path2,label2,contr=True)
+        del3,contr3,w_delay3 = delay(n,k,path3,label3,contr=True)
+        
+        obtained_path = sweep_map(n,k,path1)
+        diff = [path3[i]+not_pdinv1[i] for i in range(n)] 
+
+        if path3 == obtained_path:
+            print("Original path is {}\t{}".format(path1,label1))
+            print("Original not_tdinv \t{}".format(not_tdinv1))
+            print("Original not_dinvc \t{}".format(not_dinvcorr1))
+            print("Original not_pdinv \t{}".format(not_pdinv1))
+            print("Maximum  path is {}\t{}".format(path1,label1_max))
+            print("Path obtained is \t{}\t{} with delay word {}".format(path2,label2,w_delay2))
+            print("Path maximize is \t{}\t{} with delay word {}".format(path3,label3,w_delay3))
+            print("Sum {}\t\t THIS WORKS!".format(diff))
+            print("")
+            print("Sweep map is {}".format(obtained_path))
+
+if TRY == 5:
+    # Testing inverse sweep map
+    kDyck = kDyckPaths(n,k)
+    for path in kDyck:
+        path2 = sweep_map(n,k,path)
+        path3 = inverse_sweep_map(n,k,path2)
+        if path != path3:
+            print("Path {} \t path2 {} \t path3 {}".format(path,path2,path3))
+
+if TRY == 6:
+    # Testing new Phi map
+    nkPF = nkParkingFunctions(n,k)
+    for [path1,label1] in nkPF:
+        [path2,label2] = Psi(n,k,path1,label1)
+        delay2,contrs,w_del2 = delay(n,k,path2,label2,contr=True)
+
+        label1_max = max_tdinv_label(n,k,path1)
+        [path3,label3, not_tdinv3,not_dinvcorr3] = Psi(n,k,path1,label1_max,infos=True)
+
+        path3_c,path1_c,w_del_max = Phi(n,k,path2,label2)
+        '''
+        if path3 != path3_c:
+            print("Path3 {} \tand Path_max_tdinv {}".format(path3,path3_c))
+            #print(path1)
+        '''
+        if path1 != path1_c and max(area_word(n,k,path1)) <= 1:
+            tdinv1 = tdinv_word(n,k,path1,label1)
+            maxtdinv1 = max_tdinv_word(n,k,path1)
+            pdinv1 = not_pdinv_word(n,k,path1)
+            tdinv_max = tdinv_word(n,k,path1,label1_max)
+            maxtdinv_max = max_tdinv_word(n,k,path1)
+            pdinv_max = not_pdinv_word(n,k,path1)
+            print("")
+            print("Path1 {} \tand label1 {}".format(path1,label1))
+            print("\t Tdinv {}\n\t Mdinv {}\n\t Pdinv {}".format(tdinv1,maxtdinv1,pdinv1))
+            print("Path1 {} \tand label1_max {}".format(path1,label1_max))
+            print("\t Tdinv {}\n\t Mdinv {}\n\t Pdinv {}".format(tdinv_max,maxtdinv_max,pdinv_max))
+            print("Path2 {} \tand label2 {}".format(path2,label2))
+            print("Path3 {} \tand Path_max_tdinv {}".format(path3,path3_c))
+            print("Now word delay {}".format(w_del2))
+            print("Max word delay {}".format(w_del_max))

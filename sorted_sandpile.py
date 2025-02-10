@@ -280,7 +280,7 @@ class SandpileSortConfig():
         return delay
     
 
-    def k_delay(self, k, order = [], check_rec = True):             ## Returns the NEW delay statistic of the configuration
+    def k_delay(self, order = [], check_rec = True):             ## Returns the NEW delay statistic of the configuration
         r"""
             Given a reading order of nonsink vertices, this function computes the configuration's new conjectured delay.
             - k             : the multeplicity of all edges (except incident to the sink).
@@ -293,6 +293,8 @@ class SandpileSortConfig():
             self.sandpile_struct.show()
             raise Exception("The sorted configuration is not recurrent, hence delay is not defined.")
 
+        k = max([self.sandpile_struct.degree(v) for v in self.vertices])
+
         nonsink_vert = self.vertices
         n = len(nonsink_vert)
 
@@ -301,8 +303,8 @@ class SandpileSortConfig():
             order.sort()
             order.reverse()
 
-        toppl = [0 for i in range(n)]                                               # Stores information on how many partial topplings are still needed
-        finalv = [k for i in range(n)]            # We exit the loop when toppl == finalv
+        toppl = [0]*n                                           # Stores information on how many partial topplings are still needed
+        finalv = [k]*n                                          # We exit the loop when toppl == finalv
         delay = 0
         plus = 0
         self.topple_sink(sorting = False)                               # Start by toppling the sink
@@ -528,18 +530,17 @@ class SortedSandpile():
                 ordered = self.specific_opt[3]
             
         if self.specific_opt[0] == "mul-clique-indep":              # Compute the polynomial with k_delay
-            k_mul = self.specific_opt[3]
             for config in self.sorted_rec:
                 sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group, sort = False, verts = self.vertices)
                 q_exp = sortedconfig.level()
-                t_exp = sortedconfig.k_delay(order = ordered, k=k_mul, check_rec=False)
+                t_exp = sortedconfig.k_delay(order = ordered, check_rec=False)
                 #print("Configurazione {} con livello {} e delay {}".format(sortedconfig.sandpile_config, q_exp, t_exp))
                 poly = poly + (q**q_exp) * (t**t_exp)
         else:                                                       # Compute the polynomial with regular delay
             for config in self.sorted_rec:
                 sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group, sort = False, verts = self.vertices)
                 q_exp = sortedconfig.level()
-                t_exp = sortedconfig.delay(order = ordered, check_rec=False)
+                t_exp = sortedconfig.k_delay(order = ordered, check_rec=False)
                 #print("Configurazione {} con livello {} e delay {}".format(sortedconfig.sandpile_config, q_exp, t_exp))
                 poly = poly + (q**q_exp) * (t**t_exp)
         
@@ -732,7 +733,7 @@ class SortedSandpile():
                     indep.append(vert)
             palette = rainbow(2)    #type: ignore
             col = {palette[0]:cliq, palette[1]:indep}    #type: ignore
-            self.specific_opt[1].show(vertex_colors = col, vertex_labels=self.specific_opt[2], edge_labels=True)
+            self.specific_opt[1].show(vertex_colors = col, vertex_labels=self.specific_opt[2], edge_labels=False)
     
 
     def export(self, saveopt = 0, opt = 2):                 ## Export informations for the Sorted Sandpile
@@ -986,6 +987,7 @@ def MultiGeneral_CliqueIndependent_SortedSandpile(cells_graph, card_cell, multi_
         perm_group.append(dict_cell[cell])
 
         for vert in range(abs(card_cell[cell])):
+            # Add cell with its own vertices
             if card_cell[cell] > 0:                         # Add for clique
                 if cell in multiedge_cell.keys():               # If we have multiple edges...
                     next_neigh = [0 for k in range(multi_sink)] + [index_next_cell + j for j in range(abs(card_cell[cell])) for k in range(multiedge_cell[cell]) if index_next_cell + j != now]
@@ -993,7 +995,7 @@ def MultiGeneral_CliqueIndependent_SortedSandpile(cells_graph, card_cell, multi_
                     next_neigh = [0 for k in range(multi_sink)] + [index_next_cell + j for j in range(abs(card_cell[cell])) if index_next_cell + j != now]
             else:                                           # Add nothing for independent
                 next_neigh = [0 for k in range(multi_sink)]
-            # Add complete edges with other cells...
+            # Add complete with outer edges
             for neigh_cell in cells_graph.neighbors(cell):
                 multi = list(cells_graph.edges(labels=False)).count((cell, neigh_cell))
                 next_neigh = next_neigh + [x for x in dict_cell[neigh_cell] for k in range(multi)]
