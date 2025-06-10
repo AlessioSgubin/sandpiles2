@@ -4,7 +4,7 @@
 import copy
 import sys
 
-TRY = 6
+TRY = 8
 
 def kDyckPaths(n,k):                        # kDYCKPATHS: computes the set of all (nk,n)-Dyck paths
     possible_paths = [[1]]
@@ -140,6 +140,12 @@ def maxtdinv(n,k,w_path):                   # MAXTDINV
     park = sorted(range(len(order)), key=lambda k: order[k])
     park = [i+1 for i in park]
     return tdinv(n,k,w_path,park)
+
+def max_w_read(n,k,w_path):                 # MAX_W_READ: returns the labelling maximising tdinv
+    rank_list = [(n*k+1)*i + n*w_path[i] for i in range(n)]
+    order = sorted(range(len(rank_list)), key=lambda k: rank_list[k])
+    park = sorted(range(len(order)), key=lambda k: order[k])
+    return [i+1 for i in park]
 
 def dinv(n,k,w_path,w_label):               # DINV: computes the dinv of a parking function
     #print("La statistica pdinv è {}".format(pdinv(n,k,w_path)))
@@ -597,11 +603,30 @@ def Phi(n,k,w_path,w_label,infos = False):
 
     return path_max_tdinv,path_image,w_delay_max
     
+def visual_degree(p):
+    q_max = p.degrees()[0]
+    t_max = p.degrees()[1]
+    max_deg = max([q_max,t_max])
+    # Compute the matrix
+    coeff_matrix = [[p.coefficient([q_deg, t_deg]) for t_deg in range(max_deg + 1)] for q_deg in range(max_deg + 1)]
+    # Plot the matrix
+    return matrix_plot(matrix(coeff_matrix))
 
+def consec_later(n, word):        # Return list of labels i such that i+1 appears later
+    asc = []
+    for i in range(n-1):
+        lambd = i + 1
+        pos = word.index(lambd)
+        if lambd + 1 in [word[pos + j + 1] for j in range(n-1-pos)]:
+            asc = asc + [lambd]
+    return asc
+
+def consec_before(n, word):        # Return list of labels i such that i+1 appears later
+    return [x+1 for x in range(n) if x+1 not in consec_later(n, word)]
 
 ### Now let's test the bijection...
 n = 5
-k = 2
+k = 4
 
 if TRY == 1:
     for [path1,label1] in nkParkingFunctions(n,k):
@@ -773,3 +798,36 @@ if TRY == 6:
             print("Path3 {} \tand Path_max_tdinv {}".format(path3,path3_c))
             print("Now word delay {}".format(w_del2))
             print("Max word delay {}".format(w_del_max))
+
+if TRY == 7:
+    nPF = nkParkingFunctions(n,1)
+    for [path1,label1] in nPF:
+        # Compute image
+        [path2,label2] = Psi(n,1,path1,label1)
+        # Compute statistics
+        area1 = area(n,1,path1)
+        dinv1 = dinv(n,1,path1,label1)
+        area2 = area(n,1,path2)
+        dinv2 = dinv(n,1,path2,max_w_read(n,1,path2))
+        dela2 = delay(n,1,path2,label2)
+        if dinv2 != dela2:
+            print("Path 1 is:\t{}\t and has dinv: {}\t area: {}".format([path1,label1],dinv1,area1))
+            print("Path 2 is:\t{}\t and has area: {}\t dinv: {} \t delay:{}\n".format([path2,label2],area2,dinv2,dela2))
+
+if TRY == 8:        # TESTING SHUFFLE
+    nkPF = nkParkingFunctions(n,k)
+    total = len(nkPF)
+    count = 1
+    for [path1,label1] in nkPF:
+        print("Path {}\t of total {}\t\t\tPercentage: {}".format(count,total,floor(100*count/total)))
+        # Compute the image path
+        [path2,label2] = Psi(n,k,path1,label1)
+        word1 = w_reading(n,k,path1,label1)
+        word2 = label2
+        # Compute consecutive shuffles
+        #diff = [x for x in consec_before(n,word1) if x not in consec_before(n,word2)]
+        if consec_before(n,word1) != consec_before(n,word2):
+            print("Path1 {}\t Label1 {}".format(path1,label1))
+            print("Path2 {}\t Label2 {}".format(path2,label2))
+            print("Problem is {}\n".format(diff))
+        count += 1

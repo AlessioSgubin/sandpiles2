@@ -52,8 +52,8 @@ def is_symmetric(poly):         # Check if polynomial is symmetric in q and t
     poly2(x=t)
     return (poly == poly2)
 
-n = 7
-k = 2
+n = 6
+k = 3
 
 S = Multi_CliqueIndependent_SortedSandpile([n],[],k)        # Define clique with n vertices
 

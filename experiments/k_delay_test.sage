@@ -13,10 +13,10 @@ def is_symmetric(poly):         # Check if polynomial is symmetric in q and t
     poly2 = poly2(x=t)
     return poly1 == poly2
 
-mu = [3,2]
+mu = [3]
 nu = []
 n = sum(mu) + sum(nu)
-k = 2
+k = 5
 hmul = 0
 
 #
@@ -62,7 +62,7 @@ S = Multi_CliqueIndependent_SortedSandpile(mu,nu,k)
 
 poly_sandpile = S.qt_Polynomial(opt=2)
 
-print("Are the polynomials equal? {}".format(poly_symmetric == poly_sandpile))
+print(poly_sandpile)
 
 #
 #   Consider a different sandpile

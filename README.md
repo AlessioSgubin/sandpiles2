@@ -1,5 +1,9 @@
 # Sorted Sandpiles and Configurations
 
+In this repository you can find the file `sorted_sandpile.py` that contains the implementation of the new sorted sandpile model.
+
+In the following lines, we redact a more detailed description of the classes and methods for sorted sandpiles and their configurations.
+
 ## Sorted Sandpile
 
 The class `SortedSandpile` implements a modified version of the Sandpile model.
@@ -157,4 +161,74 @@ The following list contains all methods implemented for `SortedSandpile` class.
 
 ## Methods for Sorted Configurations
 
-TBD
+The following list contains all methods for class `SandpileSortConfig`.
+-   `__init__(sandp, conf, permut, sort = True, verts = [])`
+    Initialization of the class SandpileSortConfig.
+    
+    Details:
+    -   INPUT: the possible arguments are:
+        -   `sandp`         : an object from `SortedSandpile` class.
+        -   `conf`          : it can be a list, dictionary or a `SandpileConfig` object.
+        -   `permut`        : this is a list of sub-list. Each sub-list correspond to a subset of all vertices equivalent by sorting.
+        -   `sort = True`   : if True, the configuration is sorted using the convention of being increasing on permut sublists.
+        -   `verts = []`    : if non-empty this list modify the default naming of vertices.
+    -   OUTPUT: a `SandpileSortConfig` implementation with the given input information.
+
+-   `sandpile_struct()`
+    Returns the underlying sandpile structure.
+
+-   `sort(change = True)`
+    
+
+## Specific Families of Sandpiles
+
+-   `CliqueIndependent_SortedSandpile(mu, nu)`
+    This function constructs the original sorted sandpile $G(\mu;\nu)$.
+    Details:
+    -   INPUT: the arguments are:
+        -   `mu`    : a list representing a composition, associated to clique sets.
+        -   `nu`    : a list representing a composition, associated to independent sets.
+    -   OUTPUT: a `SortedSandpile` obtained using $G(\mu;\nu)$.
+
+-   `General_CliqueIndependent_SortedSandpile(cells_graph, card_cell, order_cells = [])`
+    This function constructs a sorted sandpile given a "clique-independent" structure.
+    For every vertex `v` of the graph `cells_graph`, the construction considers `card_cell[v]` and
+    -   if `card_cell[v] > 0` it creates a clique set of `card_cell[v]` vertices.
+    -   if `card_cell[v] < 0` it creates an independent set of `abs(card_cell[v])` vertices.
+
+    For every edge in `cells_graph`, an edge is drawn between all vertices on the two clique/independent sets linked by such edge.
+    Finally, add a sink connected to every vertex.
+    Details:
+    -   INPUT:
+        -   `cells_graph`       : a graph structure.
+        -   `card_cell`         : a dictionary associating vertices of `cells_graph` to integer values.
+        -   `order_cells = []`  : a list containing the reading order of cells in the graph.
+    -   OUTPUT: a `SortedSandpile` described by the input structure.
+
+-   `Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1, sinkmul = 1)`
+    This function constructs the sorted sandpile $G(\mu;\nu)$ where edges inside cliques have multeplicity `kmul` and between them multeplicity `hmul`.
+    Details:
+    -   INPUT: the arguments are:
+        -   `mu`        : a list representing a composition, associated to clique sets.
+        -   `nu`        : a list representing a composition, associated to independent sets.
+        -   `kmul`      : multeplicity of edges inside cliques.
+        -   `hmul`      : multeplicity of edges between cliques.
+        -   `sinkmul`   : multeplicity of edges between sink and all other vertices.
+    -   OUTPUT: a `SortedSandpile` obtained using $G(\mu;\nu)$.
+
+-   `MultiGeneral_CliqueIndependent_SortedSandpile(cells_graph, card_cell, multi_sink = 1, multiedge_cell = {}, order_cells = [])`
+    This function constructs a sorted sandpile given a "clique-independent" structure.
+    For every vertex `v` of the graph `cells_graph`, the construction considers `card_cell[v]` and
+    -   if `card_cell[v] > 0` it creates a clique set of `card_cell[v]` vertices and edges of multeplicity `multiedge_cell[v]`.
+    -   if `card_cell[v] < 0` it creates an independent set of `abs(card_cell[v])` vertices.
+
+    For every edge in `cells_graph`, an edge is drawn between all vertices on the two clique/independent sets linked by such edge, with its corresponding multeplicity.
+    Finally, add a sink connected to every vertex with multeplicity `multi_sink`.
+    Details:
+    -   INPUT:
+        -   `cells_graph`           : a graph structure.
+        -   `card_cell`             : a dictionary associating vertices of `cells_graph` to integer values.
+        -   `multi_sink = 1`        : an integer, the multeplicity of edges from sink.
+        -   `multiedge_cell = {}`   : list of multeplicities in each clique set.
+        -   `order_cells = []`      : a list containing the reading order of cells in the graph.
+    -   OUTPUT: a `SortedSandpile` described by the input structure.

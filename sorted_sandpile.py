@@ -39,7 +39,7 @@ class SandpileSortConfig():
 
     def __init__(self, sandp, conf, permut, sort = True, verts = []):      ## Defines the class SandpileSortConfig
         r"""
-            Definition of the class SandpileSortConfig.
+            Initialization of the class SandpileSortConfig.
             
             The arguments given are a sandpile and a partition of the vertex set (without sink).
         """
@@ -293,7 +293,8 @@ class SandpileSortConfig():
             self.sandpile_struct.show()
             raise Exception("The sorted configuration is not recurrent, hence delay is not defined.")
 
-        k = max([self.sandpile_struct.degree(v) for v in self.vertices])
+        #k = max([self.sandpile_struct.degree(v) for v in self.vertices])
+        k = max([edge[2] for edge in self.sandpile_struct.edges()])
 
         nonsink_vert = self.vertices
         n = len(nonsink_vert)
@@ -545,7 +546,7 @@ class SortedSandpile():
                 poly = poly + (q**q_exp) * (t**t_exp)
         
         return poly
-    
+
 
     def associated_ring(self, coeff_ring, order = [], homog = False):       ## Compute the associated ring
         r"""
@@ -898,7 +899,7 @@ def General_CliqueIndependent_SortedSandpile(cells_graph, card_cell, order_cells
     return S
 
 
-def Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1):                                                                    ## Specific type of Sandpile
+def Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1, sinkmul = 1):                                                                    ## Specific type of Sandpile
     r"""
         Construction of the Sorted Sandpile, given two partitions mu, nu, where edges have multeplicity k in each clique and multeplicity h between components.
     """
@@ -907,7 +908,7 @@ def Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1):            
 
     mu_num = sum(mu)                                    # Number of independent vertices
     nu_num = sum(nu)                                    # Number of vertices in cliques
-    d = {0 : [i+1 for i in range(mu_num + nu_num)]}     # Initialize the dictionary that will define the graph, link the sink to each vertex
+    d = {0 : [i+1 for i in range(mu_num + nu_num)]*sinkmul}     # Initialize the dictionary that will define the graph, link the sink to each vertex
     perm_group = []                                     # Initialize the permutation group acting on the graph
 
     part_first = 1                                      # Keeps track of first vertex of current part
@@ -915,7 +916,7 @@ def Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1):            
         for i in range(part_nu):
             indep = [vert for vert in range(mu_num + nu_num + 1) for mult in range(kmul-1) if (part_first <= vert) and (vert < part_first + part_nu) and (vert != part_first + i)]
             others = [vert for vert in range(mu_num + nu_num + 1) for mult in range(hmul) if ((0 < vert) and (vert < part_first)) or (vert >= part_first + part_nu)]
-            d[part_first + i] = [0] + indep + others
+            d[part_first + i] = [0]*sinkmul + indep + others
                                                                         # ...add all edges except for other vertices in part_nu    
         perm_group.append([part_first+j for j in range(part_nu)])       # Add the permutation orbit for the nu_part
         part_first += part_nu
@@ -925,7 +926,7 @@ def Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1):            
         for i in range(part_mu):
             clique = [vert for vert in range(mu_num + nu_num + 1) for mult in range(kmul) if (part_first <= vert) and (vert < part_first + part_mu) and (vert != part_first + i)]
             others = [vert for vert in range(mu_num + nu_num + 1) for mult in range(hmul) if ((0 < vert) and (vert < part_first)) or (vert >= part_first + part_mu)]
-            d[part_first + i] = [0] + clique + others
+            d[part_first + i] = [0]*sinkmul + clique + others
         perm_group.append([part_first+j for j in range(part_mu)])       # Add the permutation orbit for the mu_part
         part_first += part_mu
 
