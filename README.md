@@ -157,4 +157,53 @@ The following list contains all methods implemented for `SortedSandpile` class.
 
 ## Methods for Sorted Configurations
 
-TBD
+-   `CliqueIndependent_SortedSandpile(mu, nu)`
+    This function constructs the original sorted sandpile $G(\mu;\nu)$.
+    Details:
+    -   INPUT: the arguments are:
+        -   `mu`    : a list representing a composition, associated to clique sets.
+        -   `nu`    : a list representing a composition, associated to independent sets.
+    -   OUTPUT: a `SortedSandpile` obtained using $G(\mu;\nu)$.
+
+-   `General_CliqueIndependent_SortedSandpile(cells_graph, card_cell, order_cells = [])`
+    This function constructs a sorted sandpile given a "clique-independent" structure.
+    For every vertex `v` of the graph `cells_graph`, the construction considers `card_cell[v]` and
+    -   if `card_cell[v] > 0` it creates a clique set of `card_cell[v]` vertices.
+    -   if `card_cell[v] < 0` it creates an independent set of `abs(card_cell[v])` vertices.
+
+    For every edge in `cells_graph`, an edge is drawn between all vertices on the two clique/independent sets linked by such edge.
+    Finally, add a sink connected to every vertex.
+    Details:
+    -   INPUT:
+        -   `cells_graph`       : a graph structure.
+        -   `card_cell`         : a dictionary associating vertices of `cells_graph` to integer values.
+        -   `order_cells = []`  : a list containing the reading order of cells in the graph.
+    -   OUTPUT: a `SortedSandpile` described by the input structure.
+
+-   `Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1, sinkmul = 1)`
+    This function constructs the sorted sandpile $G(\mu;\nu)$ where edges inside cliques have multeplicity `kmul` and between them multeplicity `hmul`.
+    Details:
+    -   INPUT: the arguments are:
+        -   `mu`        : a list representing a composition, associated to clique sets.
+        -   `nu`        : a list representing a composition, associated to independent sets.
+        -   `kmul`      : multeplicity of edges inside cliques.
+        -   `hmul`      : multeplicity of edges between cliques.
+        -   `sinkmul`   : multeplicity of edges between sink and all other vertices.
+    -   OUTPUT: a `SortedSandpile` obtained using $G(\mu;\nu)$.
+
+-   `MultiGeneral_CliqueIndependent_SortedSandpile(cells_graph, card_cell, multi_sink = 1, multiedge_cell = {}, order_cells = [])`
+    This function constructs a sorted sandpile given a "clique-independent" structure.
+    For every vertex `v` of the graph `cells_graph`, the construction considers `card_cell[v]` and
+    -   if `card_cell[v] > 0` it creates a clique set of `card_cell[v]` vertices and edges of multeplicity `multiedge_cell[v]`.
+    -   if `card_cell[v] < 0` it creates an independent set of `abs(card_cell[v])` vertices.
+
+    For every edge in `cells_graph`, an edge is drawn between all vertices on the two clique/independent sets linked by such edge, with its corresponding multeplicity.
+    Finally, add a sink connected to every vertex with multeplicity `multi_sink`.
+    Details:
+    -   INPUT:
+        -   `cells_graph`           : a graph structure.
+        -   `card_cell`             : a dictionary associating vertices of `cells_graph` to integer values.
+        -   `multi_sink = 1`        : an integer, the multeplicity of edges from sink.
+        -   `multiedge_cell = {}`   : list of multeplicities in each clique set.
+        -   `order_cells = []`      : a list containing the reading order of cells in the graph.
+    -   OUTPUT: a `SortedSandpile` described by the input structure.
