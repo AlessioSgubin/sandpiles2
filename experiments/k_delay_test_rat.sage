@@ -3,7 +3,6 @@
 #
 attach("./sorted_sandpile.py")
 
-
 def level_rat(sandp, restr = 1):                                                ## Returns the level statistic of the configuration
     r"""
         Returns the level of the configuration.
@@ -222,3 +221,7 @@ plotted = visual_degree(p_sand)
 #poly_sandpile2 = T.qt_Polynomial(opt=2)
 
 #print("Is the polynomial symmetric? {}".format(is_symmetric(poly_sandpile2)))
+
+### Mindelay
+
+n = 
