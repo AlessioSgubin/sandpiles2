@@ -280,7 +280,7 @@ class SandpileSortConfig():
         return delay
     
 
-    def k_delay(self, order = [], check_rec = True):             ## Returns the NEW delay statistic of the configuration
+    def k_delay(self, k = -1, order = [], check_rec = True):                ## Returns the NEW delay statistic of the configuration
         r"""
             Given a reading order of nonsink vertices, this function computes the configuration's new conjectured delay.
             - k             : the multeplicity of all edges (except incident to the sink).
@@ -293,8 +293,8 @@ class SandpileSortConfig():
             self.sandpile_struct.show()
             raise Exception("The sorted configuration is not recurrent, hence delay is not defined.")
 
-        #k = max([self.sandpile_struct.degree(v) for v in self.vertices])
-        k = max([edge[2] for edge in self.sandpile_struct.edges()])
+        if k == -1:
+            k = max([edge[2] for edge in self.sandpile_struct.edges()])
 
         nonsink_vert = self.vertices
         n = len(nonsink_vert)
@@ -313,18 +313,72 @@ class SandpileSortConfig():
             for i in range(len(order)):
                 if (self.sandpile_struct.out_degree(order[i]) <= self.sandpile_config[order[i]]) and (toppl[i] == 0):
                                                                         # Can be toppled for the first time!
-                    self.single_topple(order[i], threshold = toppl[i], sorting = False)
+                    self.single_topple(order[i], threshold = k-1-toppl[i], sorting = False)
                     toppl[i] += 1
                     delay += plus
                 else:
                     if toppl[i] < finalv[i] and toppl[i] > 0:                   # Topple later time...
-                        self.single_topple(order[i], threshold = toppl[i], sorting = False)
+                        self.single_topple(order[i], threshold = k-1-toppl[i], sorting = False)
                         toppl[i] += 1
             plus += 1
         #print("The configuration {} has k-delay {}".format(self.sandpile_config, delay))
         self.sort()
         return delay
+    
 
+    def k_delay_test(self, k = -1, order = [], check_rec = True):                ## Returns the NEW delay statistic of the configuration
+        r"""
+            Given a reading order of nonsink vertices, this function computes the configuration's new conjectured delay.
+            - k             : the multeplicity of all edges (except incident to the sink).
+            - order         : the order for reading vertices. If undefined, the decreasing order on vertices is assumed.
+            - check_rec     : this option can be used to override the is_recurrent() call.
+        """
+        if (not self.is_recurrent()) and check_rec:           # Check if the configuration is recurrent
+            print(self.sandpile_config)
+            print(self.sandpile_config.is_recurrent())
+            self.sandpile_struct.show()
+            raise Exception("The sorted configuration is not recurrent, hence delay is not defined.")
+
+        if k == -1:
+            k = max([edge[2] for edge in self.sandpile_struct.edges()])
+
+        nonsink_vert = self.vertices
+        n = len(nonsink_vert)
+
+        if order == []:                                     # No order has been assigned: take decreasing order
+            order = copy.copy(nonsink_vert)
+            order.sort()
+            order.reverse()
+
+        toppl = [0]*n                                           # Stores information on how many partial topplings are still needed
+        finalv = [k]*n                                          # We exit the loop when toppl == finalv
+        delay = 0
+        plus = 0
+        wtopp = []      # Toppling word
+        record = []     # Record of iterations
+        self.topple_sink(sorting = False)                               # Start by toppling the sink
+        while toppl != finalv:                               # Until everything has been toppled k times...
+            for i in range(len(order)):
+                if (self.sandpile_struct.out_degree(order[i]) <= self.sandpile_config[order[i]]) and (toppl[i] == 0):
+                                                                        # Can be toppled for the first time!
+                    self.single_topple(order[i], threshold = k-1-toppl[i], sorting = False)
+                    toppl[i] += 1
+                    delay += plus
+                    wtopp = wtopp + [order[i]]
+                    record = record + [order[i]]
+                else:
+                    if toppl[i] < finalv[i] and toppl[i] > 0:                   # Topple later time...
+                        self.single_topple(order[i], threshold = k-1-toppl[i], sorting = False)
+                        toppl[i] += 1
+                        wtopp = wtopp + [order[i]]
+                        record = record + [order[i]]
+                    else:
+                        record = record + [-1]
+            plus += 1
+        #print("The configuration {} has k-delay {}".format(self.sandpile_config, delay))
+        self.sort()
+        return [delay, wtopp, record]
+  
 
     def show(self, sink = True, colors = False, heights = False, directed = False):     ## Returns a drawing of the configuration
         r"""
@@ -413,7 +467,7 @@ class SortedSandpile():
         return self.sandpile_struct.recurrents(verbose = verbose)
     
 
-    def sorted_recurrents(self, option = 0):                                ## Computes a list of all sorted recurrent configurations
+    def sorted_recurrents(self, option = 2):                                ## Computes a list of all sorted recurrent configurations
         r"""
             Computes the sorted recurrent configurations.
 
@@ -534,7 +588,7 @@ class SortedSandpile():
             for config in self.sorted_rec:
                 sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group, sort = False, verts = self.vertices)
                 q_exp = sortedconfig.level()
-                t_exp = sortedconfig.k_delay(order = ordered, check_rec=False)
+                t_exp = sortedconfig.k_delay(k = self.specific_opt[3], order = ordered, check_rec=False)
                 #print("Configurazione {} con livello {} e delay {}".format(sortedconfig.sandpile_config, q_exp, t_exp))
                 poly = poly + (q**q_exp) * (t**t_exp)
         else:                                                       # Compute the polynomial with regular delay
@@ -937,7 +991,7 @@ def Multi_CliqueIndependent_SortedSandpile(mu, nu, kmul, hmul = -1, sinkmul = 1)
         ordered = ordered + temp
     for j in range(len(nu)):
         temp = copy.copy(perm_group[len(nu)-j-1])
-        temp.sort()
+        temp.sort(reverse = True)
         ordered = ordered + temp
     
     G = Graph(d)            # type: ignore      # Define the clique-independent graph
