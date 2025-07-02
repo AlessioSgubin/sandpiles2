@@ -178,7 +178,7 @@ The following list contains all methods for class `SandpileSortConfig`.
     Returns the underlying sandpile structure.
 
 -   `sort(change = True)`
-    
+    TBD
 
 ## Specific Families of Sandpiles
 
