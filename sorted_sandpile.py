@@ -153,6 +153,15 @@ class SandpileSortConfig():
         return self.sandpile_config.is_stable()
 
 
+    def is_vertex_stable(self, v):                  ## Check if a vertex of the configuration is stable
+        r"""
+            Check if the vertex of the configuration is stable.
+        """
+        neigh = self.sandpile_struct.edges(vertices=v)
+        outdeg_v = sum(x[2] for x in neigh)
+        return self.sandpile_config[v] < outdeg_v
+
+
     def is_sorted(self):                            ## Check if the configuration has already been sorted
         r"""
             Check if the configuration has already been sorted.
@@ -357,27 +366,48 @@ class SandpileSortConfig():
         wtopp = []      # Toppling word
         record = []     # Record of iterations
         self.topple_sink(sorting = False)                               # Start by toppling the sink
+        latex_table = "0" + "".join([" & {}".format(self.sandpile_config[n - v]) for v in range(n)] + ["\\\\ \n"])
         while toppl != finalv:                               # Until everything has been toppled k times...
             for i in range(len(order)):
-                if (self.sandpile_struct.out_degree(order[i]) <= self.sandpile_config[order[i]]) and (toppl[i] == 0):
+                if (self.sandpile_struct.out_degree(order[i]) <= self.sandpile_config[order[i]]) and (toppl[i] == 0):       # LATEX CODE
                                                                         # Can be toppled for the first time!
                     self.single_topple(order[i], threshold = k-1-toppl[i], sorting = False)
                     toppl[i] += 1
                     delay += plus
                     wtopp = wtopp + [order[i]]
                     record = record + [order[i]]
+                    latex_table += "{}".format(order[i])
+                    for ind in range(n):                                                                                    # LATEX CODE
+                        if self.is_vertex_stable(n - ind):
+                            latex_table += " & {}".format(self.sandpile_config[n - ind])
+                        else:
+                            latex_table += " & \\textbf{{ {} }}".format(self.sandpile_config[n - ind])
+                    latex_table += "\\\\ \n"
                 else:
                     if toppl[i] < finalv[i] and toppl[i] > 0:                   # Topple later time...
                         self.single_topple(order[i], threshold = k-1-toppl[i], sorting = False)
                         toppl[i] += 1
                         wtopp = wtopp + [order[i]]
                         record = record + [order[i]]
+                        latex_table += "{}".format(order[i])
+                        for ind in range(n):                                                                                    # LATEX CODE
+                            if self.is_vertex_stable(n - ind):
+                                latex_table += " & {}".format(self.sandpile_config[n - ind])
+                            else:
+                                latex_table += " & \\textbf{{ {} }}".format(self.sandpile_config[n - ind])
+                        latex_table += "\\\\ \n"
                     else:
                         record = record + [-1]
+                        #latex_table += "\\textbullet"
+                        #for ind in range(n):                                                                                    # LATEX CODE
+                        #    if self.is_vertex_stable(n - ind):
+                        #        latex_table += " & {}".format(self.sandpile_config[n - ind])
+                        #    else:
+                        #        latex_table += " & \\textbf{{ {} }}".format(self.sandpile_config[n - ind])
+                        #latex_table += "\\\\ \n"
             plus += 1
-        #print("The configuration {} has k-delay {}".format(self.sandpile_config, delay))
         self.sort()
-        return [delay, wtopp, record]
+        return [delay, wtopp, record, latex_table]
   
 
     def show(self, sink = True, colors = False, heights = False, directed = False):     ## Returns a drawing of the configuration
