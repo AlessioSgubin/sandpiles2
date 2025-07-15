@@ -335,7 +335,7 @@ class SandpileSortConfig():
         return delay
     
 
-    def k_delay_test(self, k = -1, order = [], check_rec = True):                ## Returns the NEW delay statistic of the configuration
+    def k_delay_test(self, k = -1, order = [], info = False, check_rec = True):                ## Returns the NEW delay statistic of the configuration
         r"""
             Given a reading order of nonsink vertices, this function computes the configuration's new conjectured delay.
             - k             : the multeplicity of all edges (except incident to the sink).
@@ -407,7 +407,10 @@ class SandpileSortConfig():
                         #latex_table += "\\\\ \n"
             plus += 1
         self.sort()
-        return [delay, wtopp, record, latex_table]
+        if info:
+            return [delay, wtopp, record, latex_table]
+        else:
+            return delay
   
 
     def show(self, sink = True, colors = False, heights = False, directed = False):     ## Returns a drawing of the configuration
@@ -618,7 +621,7 @@ class SortedSandpile():
             for config in self.sorted_rec:
                 sortedconfig = SandpileSortConfig(self.sandpile_struct, config, self.perm_group, sort = False, verts = self.vertices)
                 q_exp = sortedconfig.level()
-                t_exp = sortedconfig.k_delay(k = self.specific_opt[3], order = ordered, check_rec=False)
+                t_exp = sortedconfig.k_delay(order = ordered, check_rec=False)
                 #print("Configurazione {} con livello {} e delay {}".format(sortedconfig.sandpile_config, q_exp, t_exp))
                 poly = poly + (q**q_exp) * (t**t_exp)
         else:                                                       # Compute the polynomial with regular delay
