@@ -224,8 +224,9 @@ class SandpileSortConfig():
         """
         neigh = self.sandpile_struct.edges(vert)
         for v in neigh:
-            if (v[1] != self.sink) and (v[2] > threshold):
-                self.sandpile_config[v[1]] += 1
+            if v[2] > threshold:
+                if v[1] != self.sink:
+                    self.sandpile_config[v[1]] += 1
                 self.sandpile_config[vert] -= 1
         if sorting:
             self.sort()
