@@ -367,7 +367,7 @@ class SandpileSortConfig():
         wtopp = []      # Toppling word
         record = []     # Record of iterations
         self.topple_sink(sorting = False)                               # Start by toppling the sink
-        latex_table = "0" + "".join([" & {}".format(self.sandpile_config[n - v]) for v in range(n)] + ["\\\\ \n"])
+        latex_table = "0" + "".join([" & {}".format(self.sandpile_config[n-order.index(n-v)]) for v in range(n)] + ["\\\\ \n"])
         while toppl != finalv:                               # Until everything has been toppled k times...
             for i in range(len(order)):
                 if (self.sandpile_struct.out_degree(order[i]) <= self.sandpile_config[order[i]]) and (toppl[i] == 0):       # LATEX CODE
@@ -375,27 +375,33 @@ class SandpileSortConfig():
                     self.single_topple(order[i], threshold = k-1-toppl[i], sorting = False)
                     toppl[i] += 1
                     delay += plus
-                    wtopp = wtopp + [order[i]]
-                    record = record + [order[i]]
-                    latex_table += "{}".format(order[i])
+                    wtopp = wtopp + [len(order) - i]
+                    record = record + [len(order) - i]
+                    latex_table += "{}".format(len(order) - i)
                     for ind in range(n):                                                                                    # LATEX CODE
-                        if self.is_vertex_stable(n - ind):
-                            latex_table += " & {}".format(self.sandpile_config[n - ind])
+                        if toppl[ind] < finalv[ind] and toppl[ind] > 0:
+                            latex_table += " & \\textbf{{{}}}".format(self.sandpile_config[n-order.index(n-ind)])                                
                         else:
-                            latex_table += " & \\textbf{{ {} }}".format(self.sandpile_config[n - ind])
+                            if self.is_vertex_stable(n-order.index(n - ind)):
+                                latex_table += " & {}".format(self.sandpile_config[n-order.index(n-ind)])
+                            else:
+                                latex_table += " & \\textbf{{\\color{{red}}{}}}".format(self.sandpile_config[n-order.index(n-ind)])
                     latex_table += "\\\\ \n"
                 else:
                     if toppl[i] < finalv[i] and toppl[i] > 0:                   # Topple later time...
                         self.single_topple(order[i], threshold = k-1-toppl[i], sorting = False)
                         toppl[i] += 1
-                        wtopp = wtopp + [order[i]]
-                        record = record + [order[i]]
-                        latex_table += "{}".format(order[i])
+                        wtopp = wtopp + [len(order) - i]
+                        record = record + [len(order) - i]
+                        latex_table += "{}".format(len(order) - i)
                         for ind in range(n):                                                                                    # LATEX CODE
-                            if self.is_vertex_stable(n - ind):
-                                latex_table += " & {}".format(self.sandpile_config[n - ind])
+                            if toppl[ind] < finalv[ind] and toppl[ind] > 0:
+                                latex_table += " & \\textbf{{{}}}".format(self.sandpile_config[n-order.index(n-ind)])                                
                             else:
-                                latex_table += " & \\textbf{{ {} }}".format(self.sandpile_config[n - ind])
+                                if self.is_vertex_stable(n-order.index(n - ind)):
+                                    latex_table += " & {}".format(self.sandpile_config[n-order.index(n-ind)])
+                                else:
+                                    latex_table += " & \\textbf{{\\color{{red}}{}}}".format(self.sandpile_config[n-order.index(n-ind)])
                         latex_table += "\\\\ \n"
                     else:
                         record = record + [-1]
